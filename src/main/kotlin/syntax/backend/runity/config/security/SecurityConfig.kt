@@ -18,9 +18,6 @@ class SecurityConfig {
                 it.requestMatchers("/", "/login").permitAll()
                 it.anyRequest().authenticated()
             }
-            .oauth2Login {
-                it.defaultSuccessUrl("/login/auth", true)
-            }
         return http.build()
     }
 }
