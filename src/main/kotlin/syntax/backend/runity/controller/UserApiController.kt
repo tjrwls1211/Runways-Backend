@@ -27,13 +27,31 @@ class UserApiController {
         if (authentication is OAuth2AuthenticationToken) {
             val oAuth2User = authentication.principal as OAuth2User
             val attributes = oAuth2User.attributes
+            val registrationId = authentication.authorizedClientRegistrationId
 
-            val user = User(
-                id = attributes["sub"] as String,
-                name = attributes["name"] as String,
-                email = attributes["email"] as String
-            )
+            val user = when (registrationId) {
+                "google" -> {
+                    User(
+                        id = attributes["sub"] as String,
+                        name = attributes["name"] as String,
+                        email = attributes["email"] as String,
+                        platform = registrationId
+                    )
+                }
+                "kakao" -> {
+                    val kakaoAccount = attributes["kakao_account"] as? Map<String, Any> ?: throw IllegalArgumentException("Kakao account not found")
+                    val profile = kakaoAccount["profile"] as? Map<String, Any> ?: throw IllegalArgumentException("Kakao profile not found")
+                    User(
+                        id = attributes["id"].toString(),
+                        name = profile["nickname"] as String,
+                        email = kakaoAccount["email"] as String,
+                        platform = registrationId
+                    )
+                }
+                else -> throw IllegalArgumentException("Unsupported provider: $registrationId")
+            }
 
+            println("로그인한 사용자: $user")
             return ResponseEntity.ok(user)
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
