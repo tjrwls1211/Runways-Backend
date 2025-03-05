@@ -1,4 +1,4 @@
-package syntax.backend.runity.config
+package syntax.backend.runity.config.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -19,7 +19,7 @@ class SecurityConfig {
                 it.anyRequest().authenticated()
             }
             .oauth2Login {
-                it.defaultSuccessUrl("/main", true)
+                it.defaultSuccessUrl("/login/auth", true)
             }
         return http.build()
     }
