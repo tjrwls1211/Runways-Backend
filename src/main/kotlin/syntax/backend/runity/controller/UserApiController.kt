@@ -46,7 +46,6 @@ class UserApiController {
                 else -> throw IllegalArgumentException("Unsupported provider: $registrationId")
             }
 
-            println("로그인한 사용자: $user")
             return ResponseEntity.ok(user)
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
