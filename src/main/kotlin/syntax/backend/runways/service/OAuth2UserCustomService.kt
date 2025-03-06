@@ -1,4 +1,4 @@
-package syntax.backend.runity.service
+package syntax.backend.runways.service
 
 import lombok.RequiredArgsConstructor
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
@@ -6,8 +6,8 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Service
-import syntax.backend.runity.entity.User
-import syntax.backend.runity.repository.UserApiRepository
+import syntax.backend.runways.entity.User
+import syntax.backend.runways.repository.UserApiRepository
 
 @RequiredArgsConstructor
 @Service

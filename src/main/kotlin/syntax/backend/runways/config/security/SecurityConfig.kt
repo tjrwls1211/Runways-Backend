@@ -1,4 +1,4 @@
-package syntax.backend.runity.config.security
+package syntax.backend.runways.config.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

@@ -1,4 +1,4 @@
-package syntax.backend.runity.config.security
+package syntax.backend.runways.config.security
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -9,7 +9,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
-import syntax.backend.runity.util.JwtUtil
+import syntax.backend.runways.util.JwtUtil
 import java.io.IOException
 
 @Component

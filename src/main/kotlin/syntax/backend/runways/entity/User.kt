@@ -1,8 +1,6 @@
-package syntax.backend.runity.entity
+package syntax.backend.runways.entity
 
 import jakarta.persistence.*
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "users")

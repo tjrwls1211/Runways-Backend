@@ -1,4 +1,4 @@
-package syntax.backend.runity.dto
+package syntax.backend.runways.dto
 
 data class OAuthTokenRequestDTO(
     val accessToken: String

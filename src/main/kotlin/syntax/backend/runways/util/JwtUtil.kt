@@ -1,4 +1,4 @@
-package syntax.backend.runity.util
+package syntax.backend.runways.util
 
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts

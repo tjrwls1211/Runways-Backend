@@ -1,4 +1,4 @@
-package syntax.backend.runity.config.security
+package syntax.backend.runways.config.security
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
@@ -11,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
-import syntax.backend.runity.util.JwtUtil
+import syntax.backend.runways.util.JwtUtil
 import java.io.IOException
 
 @Component

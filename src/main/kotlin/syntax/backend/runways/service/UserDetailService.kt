@@ -1,4 +1,4 @@
-package syntax.backend.runity.service
+package syntax.backend.runways.service
 
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -6,8 +6,8 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import syntax.backend.runity.entity.User
-import syntax.backend.runity.repository.UserApiRepository
+import syntax.backend.runways.entity.User
+import syntax.backend.runways.repository.UserApiRepository
 import java.util.*
 import kotlin.collections.ArrayList
 
