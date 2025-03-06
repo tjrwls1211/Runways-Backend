@@ -19,6 +19,10 @@ data class User(
 
     @Column(nullable = false, length = 6)
     val platform: String,
+
+    @Column(nullable = false, length = 20)
+    val role: String = "ROLE_USER",
+
     /*
     @Column(nullable = false)
     var birthdate: LocalDate,
