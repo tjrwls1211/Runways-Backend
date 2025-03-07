@@ -45,6 +45,9 @@ class JwtRequestFilter(
                 )
                 usernamePasswordAuthenticationToken.details = WebAuthenticationDetailsSource().buildDetails(request)
                 SecurityContextHolder.getContext().authentication = usernamePasswordAuthenticationToken
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT 토큰이 만료되었습니다.")
+                return
             }
         }
         chain.doFilter(request, response)

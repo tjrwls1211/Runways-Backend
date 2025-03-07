@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
@@ -14,11 +15,16 @@ class SecurityConfig(private val jwtRequestFilter: JwtRequestFilter, private val
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            // csrf 비활성화
             .csrf { it.disable() }
+            // 세션 비활성화
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            // 접근 권한 설정
             .authorizeHttpRequests {
-                it.requestMatchers("/", "/login").permitAll()
-                it.anyRequest().authenticated()
+                it.requestMatchers("/").permitAll()
+                it.anyRequest().hasAnyRole("ADMIN", "USER")
             }
+            // oauth 로그인 설정
             .oauth2Login {
                 it.successHandler(oAuth2LoginSuccessHandler)
             }
