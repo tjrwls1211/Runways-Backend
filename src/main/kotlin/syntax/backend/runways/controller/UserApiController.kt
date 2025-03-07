@@ -7,47 +7,23 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
+import syntax.backend.runways.dto.UserInfoDTO
 import syntax.backend.runways.entity.User
+import syntax.backend.runways.service.UserApiService
 
 @Controller
-@RequestMapping("/login")
-class UserApiController {
+@RequestMapping("/api/user")
+class UserApiController(private val userApiService: UserApiService) {
 
-    @GetMapping("/auth")
-    @ResponseBody
-    fun main(): ResponseEntity<User> {
-        val authentication = SecurityContextHolder.getContext().authentication
-        if (authentication is OAuth2AuthenticationToken) {
-            val oAuth2User = authentication.principal as OAuth2User
-            val attributes = oAuth2User.attributes
-            val registrationId = authentication.authorizedClientRegistrationId
-
-            val user = when (registrationId) {
-                "google" -> {
-                    User(
-                        id = attributes["sub"] as String,
-                        name = attributes["name"] as String,
-                        email = attributes["email"] as String,
-                        platform = registrationId
-                    )
-                }
-                "kakao" -> {
-                    val kakaoAccount = attributes["kakao_account"] as? Map<String, Any> ?: throw IllegalArgumentException("Kakao account not found")
-                    val profile = kakaoAccount["profile"] as? Map<String, Any> ?: throw IllegalArgumentException("Kakao profile not found")
-                    User(
-                        id = attributes["id"].toString(),
-                        name = profile["nickname"] as String,
-                        email = kakaoAccount["email"] as String,
-                        platform = registrationId
-                    )
-                }
-                else -> throw IllegalArgumentException("Unsupported provider: $registrationId")
-            }
-
-            return ResponseEntity.ok(user)
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+    // 사용자 정보 호출
+    @PostMapping("/info")
+    fun getUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<UserInfoDTO> {
+        val jwtToken = token.substring(7)
+        val userInfo = userApiService.getUserInfoFromToken(jwtToken)
+        return ResponseEntity.ok(userInfo)
     }
 }

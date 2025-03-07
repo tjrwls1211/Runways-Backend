@@ -1,7 +1,8 @@
 package syntax.backend.runways.service
 
+import syntax.backend.runways.dto.UserInfoDTO
 import syntax.backend.runways.entity.User
 
 interface UserApiService {
-    fun getUserByEmail(email: String): User?
+    fun getUserInfoFromToken(token: String): UserInfoDTO
 }
