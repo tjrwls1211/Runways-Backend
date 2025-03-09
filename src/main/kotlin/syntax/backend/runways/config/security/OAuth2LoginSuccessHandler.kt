@@ -9,11 +9,15 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
+import syntax.backend.runways.repository.UserApiRepository
 import syntax.backend.runways.util.JwtUtil
 import java.io.IOException
 
 @Component
-class OAuth2LoginSuccessHandler(private val jwtUtil: JwtUtil) : AuthenticationSuccessHandler {
+class OAuth2LoginSuccessHandler(
+    private val jwtUtil: JwtUtil,
+    private val userApiRepository: UserApiRepository
+) : AuthenticationSuccessHandler {
 
 
     @Throws(IOException::class)
@@ -36,11 +40,14 @@ class OAuth2LoginSuccessHandler(private val jwtUtil: JwtUtil) : AuthenticationSu
         // SecurityContextHolder에 인증 정보 설정
         SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(oAuth2User, null, authorities)
 
-        // 응답 헤더에 JWT 토큰 추가
-        response.addHeader("Authorization", "Bearer $jwt")
+        // 사용자 정보 가져오기
+        val user = userApiRepository.findById(userId).orElseThrow { IllegalArgumentException("User not found") }
 
-        // 응답 바디에 JWT 토큰 추가
-        response.writer.write("{\"token\": \"$jwt\"}")
+        // nickname과 gender가 null인지 확인
+        val userStatus = if (user.nickname.isNullOrEmpty() || user.gender.isNullOrEmpty()) 1 else 0
+
+        // 응답 바디에 JWT 토큰 및 사용자 상태 추가
+        response.writer.write("{\"token\": \"$jwt\", \"status\": $userStatus}")
         response.writer.flush()
     }
 }

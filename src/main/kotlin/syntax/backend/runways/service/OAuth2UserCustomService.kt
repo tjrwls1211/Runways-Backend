@@ -6,8 +6,10 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Service
+import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.UserApiRepository
+import java.time.LocalDate
 
 @RequiredArgsConstructor
 @Service
@@ -24,7 +26,12 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
                     id = attributes["sub"] as String,
                     name = attributes["name"] as String,
                     email = attributes["email"] as String,
-                    platform = registrationId
+                    platform = registrationId,
+                    profileImageUrl = attributes["picture"] as String,
+                    follow = Follow(),
+                    gender = null,
+                    birthdate = LocalDate.now(),
+                    nickname = null
                 )
             }
             "kakao" -> {
@@ -35,7 +42,12 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
                     id = attributes["id"].toString(),
                     name = profile["nickname"] as String,
                     email = kakaoAccount["email"] as String,
-                    platform = registrationId
+                    platform = registrationId,
+                    profileImageUrl = profile["profile_image_url"] as String,
+                    follow = Follow(),
+                    gender = null,
+                    birthdate = LocalDate.now(),
+                    nickname = null
                 )
             }
             else -> throw IllegalArgumentException("Unsupported provider: $registrationId")
@@ -56,6 +68,7 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
             val updatedUser = existingUser.get().apply {
                 name = user.name
                 email = user.email
+                profileImageUrl = user.profileImageUrl
             }
             userApiRepository.save(updatedUser)
         } else {
