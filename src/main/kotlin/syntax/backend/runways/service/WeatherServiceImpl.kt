@@ -44,7 +44,7 @@ class WeatherServiceImpl : WeatherService {
         var precipitation = "No data"
         var windSpeed = "No data"
 
-        if (rootNode["response"]["header"]["resultCode"].asText() === "00") {
+        if (rootNode["response"]["header"]["resultCode"].asText() == "00") {
             val items = rootNode["response"]["body"]["items"]["item"]
             val weatherData = mutableMapOf<String, String>()
 
