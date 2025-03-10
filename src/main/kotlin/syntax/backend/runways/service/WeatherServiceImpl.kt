@@ -29,16 +29,11 @@ class WeatherServiceImpl : WeatherService {
         val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
         val formattedDate = nowHour.format(dateFormatter)
 
-        val encodedServiceKey = URLEncoder.encode(apiKey, "UTF-8")
+        val uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
 
-        println("API Key: $encodedServiceKey")
-        val uri = "$apiUrl?serviceKey=$encodedServiceKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
-
-        println("Request URI: $uri")
         // TODO : 기상청 API 해결 필요함
         val response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("No data", "No data", "No data", "No data")
 
-        println("Response: $response")
         return extractWeatherData(response)
     }
 
