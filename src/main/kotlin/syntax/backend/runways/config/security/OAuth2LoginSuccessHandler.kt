@@ -10,13 +10,15 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 import syntax.backend.runways.repository.UserApiRepository
+import syntax.backend.runways.service.LogService
 import syntax.backend.runways.util.JwtUtil
 import java.io.IOException
 
 @Component
 class OAuth2LoginSuccessHandler(
     private val jwtUtil: JwtUtil,
-    private val userApiRepository: UserApiRepository
+    private val userApiRepository: UserApiRepository,
+    private val logService: LogService
 ) : AuthenticationSuccessHandler {
 
 
@@ -45,6 +47,11 @@ class OAuth2LoginSuccessHandler(
 
         // nickname과 gender가 null인지 확인
         val userStatus = if (user.nickname.isNullOrEmpty() || user.gender.isNullOrEmpty()) 1 else 0
+
+        // 로그 저장
+        val ip = request.remoteAddr
+        val userAgent = request.getHeader("User-Agent")
+        logService.saveLog(user, "OAUTH_LOGIN", ip, userAgent)
 
         // 응답 바디에 JWT 토큰 및 사용자 상태 추가
         response.writer.write("{\"token\": \"$jwt\", \"status\": $userStatus}")

@@ -1,9 +1,8 @@
 package syntax.backend.runways.dto
 
-import com.nimbusds.openid.connect.sdk.claims.Gender
 import java.time.LocalDate
 
-data class UserInfoDTO(
+data class ResponseUserInfoDTO(
     val name: String,
     val email: String,
     val platform: String,
