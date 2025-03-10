@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.WeatherDataDTO
-import java.net.URLEncoder
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -31,7 +30,6 @@ class WeatherServiceImpl : WeatherService {
 
         val uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
 
-        // TODO : 기상청 API 해결 필요함
         val response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("No data", "No data", "No data", "No data")
 
         return extractWeatherData(response)
@@ -40,23 +38,30 @@ class WeatherServiceImpl : WeatherService {
     private fun extractWeatherData(json: String): WeatherDataDTO {
         val objectMapper = jacksonObjectMapper()
         val rootNode: JsonNode = objectMapper.readTree(json)
-        val items = rootNode["response"]["body"]["items"]["item"]
-        val weatherData = mutableMapOf<String, String>()
 
-        items.forEach { item ->
-            when (item["category"].asText()) {
-                "TMP" -> weatherData["temperature"] = "${item["fcstValue"].asDouble()}°C"
-                "REH" -> weatherData["humidity"] = "${item["fcstValue"].asInt()}%"
-                "PCP" -> weatherData["precipitation"] = item["fcstValue"].asText()
-                "WSD" -> weatherData["windSpeed"] = "${item["fcstValue"].asDouble()}m/s"
+        var temperature = "No data"
+        var humidity = "No data"
+        var precipitation = "No data"
+        var windSpeed = "No data"
+
+        if (rootNode["response"]["header"]["resultCode"].asText() === "00") {
+            val items = rootNode["response"]["body"]["items"]["item"]
+            val weatherData = mutableMapOf<String, String>()
+
+            items.forEach { item ->
+                when (item["category"].asText()) {
+                    "TMP" -> weatherData["temperature"] = "${item["fcstValue"].asDouble()}°C"
+                    "REH" -> weatherData["humidity"] = "${item["fcstValue"].asInt()}%"
+                    "PCP" -> weatherData["precipitation"] = item["fcstValue"].asText()
+                    "WSD" -> weatherData["windSpeed"] = "${item["fcstValue"].asDouble()}m/s"
+                }
             }
+            temperature = weatherData["temperature"] ?: temperature
+            humidity = weatherData["humidity"] ?: humidity
+            precipitation = weatherData["precipitation"] ?: precipitation
+            windSpeed = weatherData["windSpeed"] ?: windSpeed
         }
 
-        return WeatherDataDTO(
-            temperature = weatherData["temperature"] ?: "No data",
-            humidity = weatherData["humidity"] ?: "No data",
-            precipitation = weatherData["precipitation"] ?: "No data",
-            windSpeed = weatherData["windSpeed"] ?: "No data"
-        )
+        return WeatherDataDTO( temperature, humidity, precipitation, windSpeed )
     }
 }
