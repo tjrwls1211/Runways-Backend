@@ -24,14 +24,13 @@ class UserApiController(
         return ResponseEntity.ok(userInfo)
     }
 
-    // TODO : 테스트 필요
+    // 닉네임 중복 확인
     @GetMapping("/duplicate-check")
     fun checkNickname(@RequestParam nickname: String): ResponseEntity<Boolean> {
         val isDuplicate = userApiService.isNicknameDuplicate(nickname)
         return ResponseEntity.ok (isDuplicate)
     }
 
-    // TODO : 테스트 필요
     // 사용자 정보 업데이트
     @PatchMapping("/update")
     fun signUp(@RequestHeader("Authorization") token: String, @RequestBody requestUserInfoDTO: RequestUserInfoDTO): ResponseEntity<String> {
@@ -41,6 +40,7 @@ class UserApiController(
         return ResponseEntity.status(HttpStatus.OK).body("사용자 정보 수정 성공")
     }
 
+    // 토큰 검증
     @GetMapping("/validate")
     fun validateUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<String> {
         val jwtToken = token.substring(7)

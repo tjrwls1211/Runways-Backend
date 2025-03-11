@@ -57,6 +57,6 @@ class UserApiServiceImpl(
 
     // 닉네임 중복 확인
     override fun isNicknameDuplicate(nickname: String): Boolean {
-        return userApiRepository.existsByNickname(nickname)
+        return !userApiRepository.existsByNickname(nickname)
     }
 }
