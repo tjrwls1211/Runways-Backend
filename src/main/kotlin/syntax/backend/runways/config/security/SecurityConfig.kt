@@ -22,8 +22,8 @@ class SecurityConfig(private val jwtRequestFilter: JwtRequestFilter, private val
             // 접근 권한 설정
             .authorizeHttpRequests {
                 it.requestMatchers("/").permitAll()
+                it.requestMatchers("/api/user/update").hasAnyRole("ADMIN", "USER","WITHDRAWAL")
                 //it.anyRequest().hasAnyRole("ADMIN", "USER")
-
                 it.anyRequest().permitAll()
             }
             // oauth 로그인 설정
