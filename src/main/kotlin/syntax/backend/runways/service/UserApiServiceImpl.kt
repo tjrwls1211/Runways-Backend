@@ -17,6 +17,7 @@ class UserApiServiceImpl(
     private val jwtUtil: JwtUtil
 ) : UserApiService {
 
+    // 토큰에서 유저 정보 가져오기
     override fun getUserDataFromToken(token: String): User {
         val id = jwtUtil.extractUsername(token)
         val user: Optional<User> = userApiRepository.findById(id)
@@ -33,7 +34,19 @@ class UserApiServiceImpl(
         val user: Optional<User> = userApiRepository.findById(id)
         if (user.isPresent) {
             val userInfo = user.get()
-            return ResponseUserInfoDTO(userInfo.name, userInfo.email, userInfo.platform, userInfo.profileImageUrl,userInfo.birthdate, userInfo.gender, userInfo.nickname)
+            return ResponseUserInfoDTO(
+                userInfo.name,
+                userInfo.email,
+                userInfo.platform,
+                userInfo.profileImageUrl,
+                userInfo.birthdate,
+                userInfo.gender,
+                userInfo.nickname,
+                userInfo.follow,
+                userInfo.follow.followers,
+                userInfo.follow.following,
+                userInfo.marketing
+                )
         } else {
             throw Exception("User not found")
         }
@@ -59,6 +72,7 @@ class UserApiServiceImpl(
                 updatedUser.birthdate = requestUserInfoDTO.birthDate
                 updatedUser.role = "ROLE_USER"
                 updatedUser.updatedAt = LocalDateTime.now()
+                updatedUser.marketing = requestUserInfoDTO.marketing
                 userApiRepository.save(updatedUser)
                 return 1
             } else {
@@ -67,6 +81,7 @@ class UserApiServiceImpl(
                 updatedUser.gender = requestUserInfoDTO.gender
                 updatedUser.birthdate = requestUserInfoDTO.birthDate
                 updatedUser.updatedAt = LocalDateTime.now()
+                updatedUser.marketing = requestUserInfoDTO.marketing
                 userApiRepository.save(updatedUser)
                 return 2
             }
@@ -96,6 +111,7 @@ class UserApiServiceImpl(
             withdrawalUser.role = "ROLE_WITHDRAWAL"
             withdrawalUser.profileImageUrl = null
             withdrawalUser.updatedAt = LocalDateTime.now()
+            withdrawalUser.marketing = false
             userApiRepository.save(withdrawalUser)
         } else {
             throw Exception("User not found")

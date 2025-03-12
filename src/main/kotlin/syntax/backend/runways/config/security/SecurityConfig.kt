@@ -23,8 +23,7 @@ class SecurityConfig(private val jwtRequestFilter: JwtRequestFilter, private val
             .authorizeHttpRequests {
                 it.requestMatchers("/").permitAll()
                 it.requestMatchers("/api/user/update").hasAnyRole("ADMIN", "USER","WITHDRAWAL")
-                //it.anyRequest().hasAnyRole("ADMIN", "USER")
-                it.anyRequest().permitAll()
+                it.anyRequest().hasAnyRole("ADMIN", "USER")
             }
             // oauth 로그인 설정
             .oauth2Login {

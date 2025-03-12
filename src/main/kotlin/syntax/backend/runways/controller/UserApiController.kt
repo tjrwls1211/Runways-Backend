@@ -2,7 +2,6 @@ package syntax.backend.runways.controller
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseUserInfoDTO
