@@ -7,4 +7,5 @@ import syntax.backend.runways.entity.User
 
 @Repository
 interface UserApiRepository : JpaRepository<User, String>{
+    fun existsByNickname(nickname: String): Boolean
 }

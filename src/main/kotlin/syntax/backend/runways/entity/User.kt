@@ -1,6 +1,10 @@
 package syntax.backend.runways.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "users")
@@ -21,26 +25,24 @@ data class User(
     @Column(nullable = false, length = 20)
     val role: String = "ROLE_USER",
 
-    /*
-    @Column(nullable = false)
     var birthdate: LocalDate,
 
-    @Column(nullable = false, length = 6)
-    var gender: String,
+    @Column(length = 6)
+    var gender: String? = null,
 
-    @Column(nullable = false, length = 15, unique = true)
-    var nickname: String,
+    @Column(length = 15, unique = true)
+    var nickname: String? = null,
 
     @Column(columnDefinition = "TEXT")
     var profileImageUrl: String? = null,
 
-    @Column(columnDefinition = "jsonb")
-    var follow: String = """{"followings": [], "followers": []}""",
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    var follow: Follow = Follow(),
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()
-    */
 )
