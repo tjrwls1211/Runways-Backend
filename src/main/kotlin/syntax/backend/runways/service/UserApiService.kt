@@ -7,6 +7,7 @@ import syntax.backend.runways.entity.User
 interface UserApiService {
     fun getUserDataFromToken(token: String): User
     fun getUserInfoFromToken(token: String): ResponseUserInfoDTO
-    fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO): User
+    fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO) : Int
     fun isNicknameDuplicate(nickname: String): Boolean
+    fun deleteUser(token: String)
 }

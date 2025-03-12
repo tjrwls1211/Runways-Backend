@@ -35,9 +35,13 @@ class UserApiController(
     @PatchMapping("/update")
     fun signUp(@RequestHeader("Authorization") token: String, @RequestBody requestUserInfoDTO: RequestUserInfoDTO): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        userApiService.updateUserInfo(jwtToken, requestUserInfoDTO)
+        val result = userApiService.updateUserInfo(jwtToken, requestUserInfoDTO)
 
-        return ResponseEntity.status(HttpStatus.OK).body("사용자 정보 수정 성공")
+        return when (result) {
+            0 -> ResponseEntity.status(HttpStatus.FORBIDDEN).body("탈퇴한 지 7일 이내에는 다시 가입할 수 없습니다.")
+            1, 2 -> ResponseEntity.status(HttpStatus.OK).body("사용자 정보 수정 성공")
+            else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("사용자 정보 수정 실패")
+        }
     }
 
     // 토큰 검증
@@ -49,5 +53,13 @@ class UserApiController(
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.")
         }
         return ResponseEntity.ok("사용자 정보가 유효합니다.")
+    }
+
+    // 사용자 삭제
+    @DeleteMapping("/delete")
+    fun deleteUser(@RequestHeader("Authorization") token: String): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        userApiService.deleteUser(jwtToken)
+        return ResponseEntity.ok("사용자 삭제 성공")
     }
 }

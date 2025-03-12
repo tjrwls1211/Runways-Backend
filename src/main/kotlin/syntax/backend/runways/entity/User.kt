@@ -14,16 +14,16 @@ data class User(
     val id: String,
 
     @Column(length = 30)
-    var name: String,
+    var name: String? = null,
 
     @Column(length = 255)
-    var email: String,
+    var email: String? = null,
 
     @Column(nullable = false, length = 6)
-    val platform: String,
+    var platform: String,
 
     @Column(nullable = false, length = 20)
-    val role: String = "ROLE_USER",
+    var role: String = "ROLE_USER",
 
     var birthdate: LocalDate,
 

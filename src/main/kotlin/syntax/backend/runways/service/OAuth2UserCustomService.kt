@@ -69,6 +69,7 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
                 name = user.name
                 email = user.email
                 profileImageUrl = user.profileImageUrl
+                platform = user.platform
             }
             userApiRepository.save(updatedUser)
         } else {
