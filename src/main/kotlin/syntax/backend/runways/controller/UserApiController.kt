@@ -1,5 +1,6 @@
 package syntax.backend.runways.controller
 
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -15,8 +16,22 @@ class UserApiController(
     private val jwtUtil: JwtUtil
 ) {
 
+    // 카카오 리디렉트 URL
+    @GetMapping("/kakao")
+    fun kakaoLogin(response: HttpServletResponse) {
+        val kakaoAuthUrl = "https://dev-solution.live/oauth2/authorization/kakao"
+        response.sendRedirect(kakaoAuthUrl)
+    }
+
+    // 구글 리디렉트 URL
+    @GetMapping("/google")
+    fun googleLogin(response: HttpServletResponse) {
+        val googleAuthUrl = "https://dev-solution.live/oauth2/authorization/google"
+        response.sendRedirect(googleAuthUrl)
+    }
+
     // 사용자 정보 호출
-    @PostMapping("/info")
+    @GetMapping("/info")
     fun getUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<ResponseUserInfoDTO> {
         val jwtToken = token.substring(7)
         val userInfo = userApiService.getUserInfoFromToken(jwtToken)
@@ -35,7 +50,7 @@ class UserApiController(
     fun signUp(@RequestHeader("Authorization") token: String, @RequestBody requestUserInfoDTO: RequestUserInfoDTO): ResponseEntity<String> {
         val jwtToken = token.substring(7)
         val result = userApiService.updateUserInfo(jwtToken, requestUserInfoDTO)
-
+        println("request")
         return when (result) {
             0 -> ResponseEntity.status(HttpStatus.FORBIDDEN).body("탈퇴한 지 7일 이내에는 다시 가입할 수 없습니다.")
             1, 2 -> ResponseEntity.status(HttpStatus.OK).body("사용자 정보 수정 성공")

@@ -20,6 +20,7 @@ class WeatherServiceImpl : WeatherService {
 
     private val restTemplate = RestTemplate()
 
+    // 기상청 API 호출
     override fun getWeather(nx: String, ny: String): WeatherDataDTO {
         val now: LocalDateTime = LocalDateTime.now()
         val nowHour = now.plusHours(0).withMinute(0).withSecond(0).withNano(0)
@@ -31,7 +32,7 @@ class WeatherServiceImpl : WeatherService {
         // 첫 요청 uri
         var uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
 
-        // 기상청 API 호출
+        // 기상청 API 요청
         var response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("No data", "No data", "No data", "No data")
 
         val objectMapper = jacksonObjectMapper()
@@ -62,6 +63,7 @@ class WeatherServiceImpl : WeatherService {
         return "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
     }
 
+    // 날씨 파싱
     private fun extractWeatherData(json: String): WeatherDataDTO {
         val objectMapper = jacksonObjectMapper()
         val rootNode: JsonNode = objectMapper.readTree(json)
