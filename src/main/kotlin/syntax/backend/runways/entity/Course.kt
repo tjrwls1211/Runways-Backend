@@ -9,7 +9,7 @@ import java.time.LocalDate
 data class Course(
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 
     @Column(name = "title", nullable = false, length = 30)
@@ -19,17 +19,17 @@ data class Course(
     @JoinColumn(name="maker", referencedColumnName = "id")
     val maker: User,
 
-    @Column(name = "hits", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "hits", nullable = false, columnDefinition = "jsonb DEFAULT jsonb_build_object(to_char(now(), 'YYYY-MM-DD'), 0)")
     val hits: String = "{}",
 
     @Convert(converter = StringListConverter::class)
-    @Column(name = "bookmark", nullable = false, columnDefinition = "text")
+    @Column(name = "bookmark", nullable = false, columnDefinition = "text DEFAULT '{}'::text[]")
     val bookmark: List<String> = emptyList(),
 
-    @Column(name = "distance", nullable = false)
+    @Column(name = "distance", nullable = false, columnDefinition = "FLOAT DEFAULT 0")
     val distance: Float = 0.0f,
 
-    @Column(name = "coordinate")
+    @Column(name = "coordinate", columnDefinition = "text")
     val coordinate: String? = null,
 
     @Column(name = "mapUrl", columnDefinition = "text")
