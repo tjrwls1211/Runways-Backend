@@ -15,7 +15,7 @@ class WeatherServiceImpl : WeatherService {
     @Value("\${api.key}")
     private lateinit var apiKey: String
 
-    @Value("\${api.url}")
+    @Value("\${api.weather.url}")
     private lateinit var apiUrl: String
 
     private val restTemplate = RestTemplate()
@@ -29,7 +29,7 @@ class WeatherServiceImpl : WeatherService {
         val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
         var formattedDate = nowHour.format(dateFormatter)
 
-        // 첫 요청 uri
+        // 요청 uri
         var uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
 
         // 기상청 API 요청

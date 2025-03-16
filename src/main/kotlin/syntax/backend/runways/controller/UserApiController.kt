@@ -39,7 +39,7 @@ class UserApiController(
     }
 
     // 닉네임 중복 확인
-    @GetMapping("/duplicate-check")
+    @GetMapping("/duplicatecheck")
     fun checkNickname(@RequestParam nickname: String): ResponseEntity<Boolean> {
         val isDuplicate = userApiService.isNicknameDuplicate(nickname)
         return ResponseEntity.ok (isDuplicate)
