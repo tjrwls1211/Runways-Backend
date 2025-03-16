@@ -6,7 +6,6 @@ import syntax.backend.runways.service.LogService
 import syntax.backend.runways.service.UserApiService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import syntax.backend.runways.entity.User
 
 @Component
 class LogInterceptor(
