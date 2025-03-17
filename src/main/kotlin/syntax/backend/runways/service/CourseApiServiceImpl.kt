@@ -7,7 +7,8 @@ import syntax.backend.runways.repository.CourseApiRepository
 
 @Service
 class CourseApiServiceImpl(private val courseApiRepository : CourseApiRepository) : CourseApiService {
-    override fun getCourseList(id:User): List<Course> {
-        return courseApiRepository.findByMaker(id)
+    override fun getCourseList(maker: User): List<Course> {
+        val courseData = courseApiRepository.findByMaker_Id(maker.id)
+        return courseData
     }
 }

@@ -2,7 +2,7 @@ package syntax.backend.runways.entity
 
 import jakarta.persistence.*
 import java.util.*
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "courses")
@@ -16,17 +16,17 @@ data class Course(
     val title: String,
 
     @ManyToOne
-    @JoinColumn(name="maker", referencedColumnName = "id")
+    @JoinColumn(name = "maker", referencedColumnName = "id")  // maker 필드를 String으로 매핑
     val maker: User,
 
-    @Column(name = "hits", nullable = false, columnDefinition = "jsonb DEFAULT jsonb_build_object(to_char(now(), 'YYYY-MM-DD'), 0)")
+    @Column(name = "hits", nullable = false, columnDefinition = "jsonb")
     val hits: String = "{}",
 
     @Convert(converter = StringListConverter::class)
-    @Column(name = "bookmark", nullable = false, columnDefinition = "text DEFAULT '{}'::text[]")
+    @Column(name = "bookmark", nullable = false, columnDefinition = "text[]")
     val bookmark: List<String> = emptyList(),
 
-    @Column(name = "distance", nullable = false, columnDefinition = "FLOAT DEFAULT 0")
+    @Column(name = "distance", nullable = false)
     val distance: Float = 0.0f,
 
     @Column(name = "coordinate", columnDefinition = "text")
@@ -36,8 +36,8 @@ data class Course(
     val mapUrl: String? = null,
 
     @Column(name = "createdAt", nullable = false)
-    val createdAt: LocalDate = LocalDate.now(),
+    val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updatedAt", nullable = false)
-    val updatedAt: LocalDate = LocalDate.now()
+    val updatedAt: LocalDateTime = LocalDateTime.now()
 )

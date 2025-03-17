@@ -19,8 +19,8 @@ class CourseApiController(
     @GetMapping("/list")
     fun getCourseList(@RequestHeader("Authorization") token: String): ResponseEntity<List<Course>> {
         val jwtToken = token.substring(7)
-        val user = userApiService.getUserDataFromToken(jwtToken)
-        val courses = courseApiService.getCourseList(user)
+        val maker= userApiService.getUserDataFromToken(jwtToken)
+        val courses = courseApiService.getCourseList(maker)
         return ResponseEntity.ok(courses)
     }
 }

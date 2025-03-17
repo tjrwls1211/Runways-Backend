@@ -14,6 +14,10 @@ class StringListConverter : AttributeConverter<List<String>, String> {
     }
 
     override fun convertToEntityAttribute(dbData: String?): List<String> {
-        return dbData?.let { objectMapper.readValue(it) } ?: emptyList()
+        return try {
+            dbData?.let { objectMapper.readValue(it) } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }
