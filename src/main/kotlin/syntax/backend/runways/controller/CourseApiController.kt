@@ -1,13 +1,11 @@
 package syntax.backend.runways.controller
 
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.service.CourseApiService
 import syntax.backend.runways.service.UserApiService
+import java.util.UUID
 
 @RestController
 @RequestMapping("api/course")
@@ -22,5 +20,12 @@ class CourseApiController(
         val maker= userApiService.getUserDataFromToken(jwtToken)
         val courses = courseApiService.getCourseList(maker)
         return ResponseEntity.ok(courses)
+    }
+
+    @PatchMapping("/update")
+    fun updateCourse(@RequestHeader("Authorization") token: String, @RequestParam courseId : UUID, title:String ): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.updateCourse(courseId, title, jwtToken)
+        return ResponseEntity.ok(result)
     }
 }

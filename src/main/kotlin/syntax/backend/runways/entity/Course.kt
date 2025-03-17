@@ -1,6 +1,8 @@
 package syntax.backend.runways.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.util.*
 import java.time.LocalDateTime
 
@@ -13,18 +15,19 @@ data class Course(
     val id: UUID = UUID.randomUUID(),
 
     @Column(name = "title", nullable = false, length = 30)
-    val title: String,
+    var title: String,
 
     @ManyToOne
-    @JoinColumn(name = "maker", referencedColumnName = "id")  // maker 필드를 String으로 매핑
+    @JoinColumn(name = "maker", referencedColumnName = "id")
     val maker: User,
 
-    @Column(name = "hits", nullable = false, columnDefinition = "jsonb")
-    val hits: String = "{}",
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    var bookmark: BookMark = BookMark(),
 
-    @Convert(converter = StringListConverter::class)
-    @Column(name = "bookmark", nullable = false, columnDefinition = "text[]")
-    val bookmark: List<String> = emptyList(),
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    var hits: Hits = Hits(),
 
     @Column(name = "distance", nullable = false)
     val distance: Float = 0.0f,

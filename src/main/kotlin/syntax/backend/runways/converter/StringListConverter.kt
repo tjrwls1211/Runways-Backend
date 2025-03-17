@@ -1,11 +1,11 @@
-package syntax.backend.runways.entity
+package syntax.backend.runways.converter
 
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
-@Converter
+@Converter(autoApply = true)
 class StringListConverter : AttributeConverter<List<String>, String> {
     private val objectMapper = jacksonObjectMapper()
 
