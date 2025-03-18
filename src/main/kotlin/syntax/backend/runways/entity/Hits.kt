@@ -1,6 +1,11 @@
 package syntax.backend.runways.entity
 
-data class Hits (
-    val hitsDate : List<String> = emptyList(),
-    val count : List<String> = emptyList()
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import lombok.*
+
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
+data class Hits(
+    val hits: List<DateCount> = emptyList()
 )

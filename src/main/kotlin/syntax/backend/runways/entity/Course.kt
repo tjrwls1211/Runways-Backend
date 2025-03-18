@@ -22,11 +22,9 @@ data class Course(
     val maker: User,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
     var bookmark: BookMark = BookMark(),
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
     var hits: Hits = Hits(),
 
     @Column(name = "distance", nullable = false)
