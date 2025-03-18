@@ -28,6 +28,8 @@ class LocationApiServiceImpl(private val locationRepository: LocationRepository)
 
     // 좌표와 관측소 거리 계산
     private fun calculateDistance(x1: Double, y1: Double, x2: Double, y2: Double): Double {
-        return abs((x1 - x2)) + abs((y1 - y2))
+        val deltaX = x1 - x2
+        val deltaY = y1 - y2
+        return sqrt(deltaX * deltaX + deltaY * deltaY)
     }
 }

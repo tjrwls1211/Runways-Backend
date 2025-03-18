@@ -25,10 +25,13 @@ class FineDustServiceImpl(
 
         // 가까운 관측소 찾기
         val nearestLocation = locationApiService.getNearestLocation(x, y)
-        val sidoData = nearestLocation?.sido ?: return FineDustDataDTO("No data","No data", "No data")
+        val sidoData = nearestLocation?.sido ?: return FineDustDataDTO("-","-", "-")
 
-        val sido = sidoData.substring(0, 2)
-
+        val sido = if (sidoData.startsWith("충청") || sidoData.startsWith("경상") || sidoData.startsWith("전라")) {
+            sidoData.substring(0, 1) + sidoData.substring(2, 3)
+        } else {
+            sidoData.substring(0, 2)
+        }
         // 요청 URI
         val uri = "$apiUrl?sidoName=$sido&pageNo=1&numOfRows=100&returnType=json&serviceKey=$apiKey&ver=1.0"
 
@@ -43,6 +46,7 @@ class FineDustServiceImpl(
         // 관측소 이름 추출
         val stationName = nearestLocation.daegioyem
 
+        println(stationName)
         // 해당 관측소의 미세먼지 값 추출
         for (item in items) {
             if (item["stationName"].asText() == stationName) {
