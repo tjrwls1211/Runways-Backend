@@ -10,7 +10,7 @@ import syntax.backend.runways.service.FineDustService
 class FineDustApiController(private val fineDustService: FineDustService) {
 
     @GetMapping
-    fun getFineDust(@RequestParam nx:Int, ny:Int ): ResponseEntity<FineDustDataDTO> {
+    fun getFineDust(@RequestParam nx:Double, ny:Double ): ResponseEntity<FineDustDataDTO> {
         val fineDustData = fineDustService.getFineDustData(nx, ny)
         return ResponseEntity.ok(fineDustData)
     }

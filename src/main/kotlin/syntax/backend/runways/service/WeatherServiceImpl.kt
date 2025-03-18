@@ -21,7 +21,7 @@ class WeatherServiceImpl : WeatherService {
     private val restTemplate = RestTemplate()
 
     // 기상청 API 호출
-    override fun getWeather(nx: String, ny: String): WeatherDataDTO {
+    override fun getWeather(nx: Double, ny: Double): WeatherDataDTO {
         val now: LocalDateTime = LocalDateTime.now()
         val nowHour = now.plusHours(0).withMinute(0).withSecond(0).withNano(0)
         val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
@@ -38,6 +38,10 @@ class WeatherServiceImpl : WeatherService {
         val objectMapper = jacksonObjectMapper()
         val rootNode: JsonNode = objectMapper.readTree(response)
 
+        // nx, ny 소수점 버림 후 정수로 변환
+        val nxInt = nx.toInt()
+        val nyInt = ny.toInt()
+
         // resultCode 값을 출력하여 확인
         val resultCode = rootNode["response"]["header"]["resultCode"].asText()
 
@@ -53,14 +57,14 @@ class WeatherServiceImpl : WeatherService {
                 val beforeHour = now.minusHours(1).withMinute(0).withSecond(0).withNano(0)
                 formattedTime = beforeHour.format(timeFormatter)
             }
-            uri = createUri(formattedDate, formattedTime, nx, ny)
-            response = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("No data", "No data", "No data", "No data")
+            uri = createUri(formattedDate, formattedTime, nxInt, nyInt)
+            response = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-")
         }
         return extractWeatherData(response)
     }
 
-    private fun createUri(formattedDate: String, formattedTime: String, nx: String, ny: String): String {
-        return "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nx&ny=$ny"
+    private fun createUri(formattedDate: String, formattedTime: String, x: Int, y: Int): String {
+        return "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$x&ny=$y"
     }
 
     // 날씨 파싱
@@ -68,10 +72,10 @@ class WeatherServiceImpl : WeatherService {
         val objectMapper = jacksonObjectMapper()
         val rootNode: JsonNode = objectMapper.readTree(json)
 
-        var temperature = "No data"
-        var humidity = "No data"
-        var precipitation = "No data"
-        var windSpeed = "No data"
+        var temperature = "-"
+        var humidity = "-"
+        var precipitation = "-"
+        var windSpeed = "-"
 
         if (rootNode["response"]["header"]["resultCode"].asText() == "00") {
             val items = rootNode["response"]["body"]["items"]["item"]
