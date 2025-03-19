@@ -21,8 +21,9 @@ class LogInterceptor(
         }
         val type = "REQUEST"
         val value = request.getHeader("User-Agent")
+        val requestUrl = request.requestURI
 
-        logService.saveLog(user, type, ip, value)
+        logService.saveLog(user, type, ip, value, requestUrl)
         return true
     }
 

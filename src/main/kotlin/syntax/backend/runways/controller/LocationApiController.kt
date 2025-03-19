@@ -14,7 +14,7 @@ class LocationApiController(
     private val locationApiService: LocationApiService
 ) {
     @GetMapping
-    fun getLocationData(@RequestParam nx: Double, @RequestParam ny: Double): ResponseEntity<LocationDataDTO> {
+    fun getLocationData(@RequestParam nx: Double, ny: Double): ResponseEntity<LocationDataDTO> {
         val nearLocation = locationApiService.getNearestLocation(nx, ny) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(
             LocationDataDTO(

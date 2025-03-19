@@ -27,5 +27,8 @@ data class Log(
 
     @ManyToOne
     @JoinColumn(name="user_id", referencedColumnName = "id")
-    val user: User? = null
+    val user: User? = null,
+
+    @Column(name = "request", columnDefinition = "text")
+    val request: String? = null,
 )
