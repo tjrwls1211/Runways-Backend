@@ -82,12 +82,8 @@ class UserApiController(
     @PatchMapping("/registerdevice")
     fun registeredDeviceId(@RequestHeader("Authorization") token: String, @RequestBody deviceIdDTO: DeviceIdDTO): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        return try {
-            userApiService.registerDeviceId(jwtToken, deviceIdDTO.deviceId)
-            ResponseEntity.ok("디바이스 값 추가 완료")
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("디바이스 값 추가 실패: ${e.message}, deviceId: ${deviceIdDTO.deviceId}")
-        }
+        userApiService.registerDeviceId(jwtToken, deviceIdDTO.deviceId)
+        return ResponseEntity.ok("디바이스 ID 추가 성공")
     }
 }
 
