@@ -13,7 +13,7 @@ import syntax.backend.runways.service.WeatherService
 class WeatherApiController(private val weatherService: WeatherService) {
 
     @GetMapping
-    fun getWeather(@RequestParam nx: String, @RequestParam ny: String): ResponseEntity<WeatherDataDTO> {
+    fun getWeather(@RequestParam nx: Double, @RequestParam ny: Double): ResponseEntity<WeatherDataDTO> {
         val weatherData : WeatherDataDTO = weatherService.getWeather(nx, ny)
         return ResponseEntity.ok(weatherData)
     }

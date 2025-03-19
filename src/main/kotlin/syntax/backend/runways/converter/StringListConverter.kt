@@ -1,0 +1,23 @@
+package syntax.backend.runways.converter
+
+import jakarta.persistence.AttributeConverter
+import jakarta.persistence.Converter
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+
+@Converter(autoApply = true)
+class StringListConverter : AttributeConverter<List<String>, String> {
+    private val objectMapper = jacksonObjectMapper()
+
+    override fun convertToDatabaseColumn(attribute: List<String>?): String {
+        return objectMapper.writeValueAsString(attribute)
+    }
+
+    override fun convertToEntityAttribute(dbData: String?): List<String> {
+        return try {
+            dbData?.let { objectMapper.readValue(it) } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+}

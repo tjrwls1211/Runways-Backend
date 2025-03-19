@@ -22,7 +22,7 @@ data class Log(
     @Column(name = "ip", nullable = false, length = 64)
     val ip: String,
 
-    @Column(name = "value", nullable = false)
+    @Column(name = "value", nullable = false, columnDefinition = "text")
     val value: String,
 
     @ManyToOne
