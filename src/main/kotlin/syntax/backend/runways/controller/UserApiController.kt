@@ -76,4 +76,13 @@ class UserApiController(
         userApiService.deleteUser(jwtToken)
         return ResponseEntity.ok("사용자 삭제 성공")
     }
+
+    // 디바이스 ID 등록
+    @PatchMapping("/registerdevice")
+    fun registeredDeviceId(@RequestHeader("Authorization") token: String, @RequestParam deviceId:String): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        userApiService.registerDeviceId(jwtToken, deviceId)
+        return ResponseEntity.ok("디바이스 값 추가 완료")
+    }
 }
+

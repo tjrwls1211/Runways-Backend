@@ -48,4 +48,7 @@ data class User(
 
     @Column(nullable = false)
     var marketing : Boolean = false,
+
+    @Column(columnDefinition = "TEXT")
+    var device : String? = null,
 )

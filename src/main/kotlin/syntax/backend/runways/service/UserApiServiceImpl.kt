@@ -117,4 +117,23 @@ class UserApiServiceImpl(
             throw Exception("User not found")
         }
     }
+
+    // 사용자 정보 업데이트
+    override fun registerDeviceId(token: String, deviceId:String) {
+        val id = jwtUtil.extractUsername(token)
+        val existingUser = userApiRepository.findById(id)
+
+        // 사용자가 존재하면 업데이트
+        if (existingUser.isPresent) {
+            val updatedUser = existingUser.get()
+            // 신규 가입자
+
+            updatedUser.updatedAt = LocalDateTime.now()
+            updatedUser.device = deviceId
+            userApiRepository.save(updatedUser)
+        }
+        else {
+            throw Exception("User not found")
+        }
+    }
 }

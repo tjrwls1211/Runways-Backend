@@ -10,4 +10,5 @@ interface UserApiService {
     fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO) : Int
     fun isNicknameDuplicate(nickname: String): Boolean
     fun deleteUser(token: String)
+    fun registerDeviceId(token: String, deviceId:String)
 }
