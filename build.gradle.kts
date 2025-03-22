@@ -41,6 +41,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("com.google.firebase:firebase-admin:9.2.0")
+    implementation("org.locationtech.jts:jts-core:1.18.1")
+    implementation("org.hibernate:hibernate-spatial:6.2.0.Final")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
