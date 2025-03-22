@@ -25,6 +25,9 @@ data class Log(
     @Column(name = "value", nullable = false, columnDefinition = "text")
     val value: String,
 
+    @Column(name = "token", columnDefinition = "text")
+    val token: String,
+
     @ManyToOne
     @JoinColumn(name="user_id", referencedColumnName = "id")
     val user: User? = null,
