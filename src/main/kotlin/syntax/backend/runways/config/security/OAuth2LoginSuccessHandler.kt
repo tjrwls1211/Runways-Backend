@@ -51,7 +51,7 @@ class OAuth2LoginSuccessHandler(
         // 로그 저장
         val ip = request.remoteAddr
         val userAgent = request.getHeader("User-Agent")
-        logService.saveLog(user, "OAUTH_LOGIN", ip, userAgent, "/oauth2/authorization/${registrationId}")
+        logService.saveLog(user, "OAUTH_LOGIN", ip, userAgent, "/oauth2/authorization/${registrationId}", jwt)
 
         // 응답 바디에 JWT 토큰 및 사용자 상태 추가
         response.writer.write("{\"token\": \"$jwt\", \"status\": $userStatus}")

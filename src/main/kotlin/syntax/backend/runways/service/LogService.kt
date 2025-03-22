@@ -9,13 +9,14 @@ import java.util.*
 @Service
 class LogService(private val logRepository: LogRepository) {
 
-    fun saveLog(userId: User?, type: String, ip: String, value: String, request: String) {
+    fun saveLog(userId: User?, type: String, ip: String, value: String, request: String, token: String) {
         val log = Log(
             type = type,
             ip = ip,
             user = userId,
             value = value,
-            request = request
+            request = request,
+            token = token
         )
         logRepository.save(log)
     }

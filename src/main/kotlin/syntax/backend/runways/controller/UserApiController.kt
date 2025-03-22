@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import syntax.backend.runways.dto.DeviceIdDTO
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseUserInfoDTO
 import syntax.backend.runways.service.UserApiService
@@ -80,9 +79,9 @@ class UserApiController(
 
     // 디바이스 ID 등록
     @PatchMapping("/registerdevice")
-    fun registeredDeviceId(@RequestHeader("Authorization") token: String, @RequestBody deviceIdDTO: DeviceIdDTO): ResponseEntity<String> {
+    fun registeredDeviceId(@RequestHeader("Authorization") token: String, @RequestParam deviceId:String): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        userApiService.registerDeviceId(jwtToken, deviceIdDTO.deviceId)
+        userApiService.registerDeviceId(jwtToken, deviceId)
         return ResponseEntity.ok("디바이스 ID 추가 성공")
     }
 }
