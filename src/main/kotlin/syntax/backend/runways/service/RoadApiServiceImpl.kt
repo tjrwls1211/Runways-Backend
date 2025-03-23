@@ -1,13 +1,13 @@
 package syntax.backend.runways.service
 
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.PrecisionModel
+import org.locationtech.jts.geom.Point
+import org.locationtech.jts.io.geojson.GeoJsonReader
+import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import syntax.backend.runways.dto.CoordinateDTO
 import syntax.backend.runways.dto.RoadDataDTO
+import syntax.backend.runways.entity.Road
 import syntax.backend.runways.repository.RoadApiRepository
 
 @Service
@@ -16,20 +16,36 @@ class RoadApiServiceImpl @Autowired constructor(
 ) : RoadApiService {
 
     override fun getRoadDataById(id: Long): RoadDataDTO {
-        val positionGeoJson = roadApiRepository.getGeoJsonByPosition(id)
-        val routeGeoJson = roadApiRepository.getGeoJsonByRoute(id)
+        val optRoad = roadApiRepository.findById(id)
+        if (optRoad.isEmpty) {
+            throw IllegalArgumentException("Road not found")
+        }
+
+        val road = optRoad.get()
+        val route = road.route
+        val position = road.position
+
+        val geoJsonWriter = GeoJsonWriter()
+
+        val geoJsonPoint = geoJsonWriter.write(position)
+        val geoJsonRoute = geoJsonWriter.write(route)
 
         return RoadDataDTO(
-            position = positionGeoJson,
-            route = routeGeoJson
+            position = geoJsonPoint,
+            route = geoJsonRoute
         )
     }
 
-    private fun getLineString(coordinateDTO: List<CoordinateDTO>): LineString {
-        val geometryFactory = GeometryFactory(PrecisionModel(), 4326)
-        val coordinates = coordinateDTO.map { Coordinate(it.latitude, it.longitude) }.toTypedArray()
-        return geometryFactory.createLineString(coordinates)
+    override fun saveRoadData(roadDataDTO: RoadDataDTO) {
+        val geoJsonReader = GeoJsonReader()
+        val position = geoJsonReader.read(roadDataDTO.position) as Point
+        val route = geoJsonReader.read(roadDataDTO.route) as LineString
+
+        val road = Road(
+            position = position,
+            route = route
+        )
+
+        roadApiRepository.save(road)
     }
-
-
 }
