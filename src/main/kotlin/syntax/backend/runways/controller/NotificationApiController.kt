@@ -4,13 +4,16 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.NotificationDTO
+import syntax.backend.runways.dto.NotificationRequestDTO
+import syntax.backend.runways.service.ExpoPushNotificationService
 import syntax.backend.runways.service.NotificationApiService
 import java.util.UUID
 
 @RestController
 @RequestMapping("/api/notification")
 class NotificationApiController(
-    private val notificationApiService: NotificationApiService
+    private val notificationApiService: NotificationApiService,
+    private val expoPushNotificationService: ExpoPushNotificationService
 ) {
 
     @GetMapping("/list")
@@ -30,5 +33,11 @@ class NotificationApiController(
             ResponseEntity.ok("알림 읽음")
         else
             ResponseEntity.notFound().build()
+    }
+
+    @PostMapping("/send")
+    fun sendNotification(@RequestBody notificationRequestDTO:NotificationRequestDTO): ResponseEntity<String> {
+        val result = expoPushNotificationService.sendPushNotification(notificationRequestDTO.token, notificationRequestDTO.title ,notificationRequestDTO.message)
+        return ResponseEntity.ok(result)
     }
 }
