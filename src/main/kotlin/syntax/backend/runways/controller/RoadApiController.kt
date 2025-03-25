@@ -11,8 +11,8 @@ class RoadApiController(
     private val roadApiService: RoadApiService
 ) {
 
-    @GetMapping("/")
-    fun getRoadData(@RequestParam id: Long): ResponseEntity<RoadDataDTO> {
+    @GetMapping("/{id}")
+    fun getRoadData(@PathVariable id:Long): ResponseEntity<RoadDataDTO> {
         val roadData = roadApiService.getRoadDataById(id)
         return ResponseEntity.ok(roadData)
     }
