@@ -34,7 +34,7 @@ class WeatherServiceImpl : WeatherService {
         val nyInt = ny.toInt()
 
         // 요청 uri
-        var uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nxInt&ny=$nyInt"
+        var uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
 
         // 기상청 API 요청
         var response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-","-")
@@ -57,7 +57,7 @@ class WeatherServiceImpl : WeatherService {
                 val beforeHour = now.minusHours(2).withMinute(0).withSecond(0).withNano(0)
                 formattedTime = beforeHour.format(timeFormatter)
             }
-            uri = createUri(formattedDate, formattedTime, nxInt, nyInt)
+            uri = createUri(formattedDate, formattedTime, nyInt, nxInt)
             response = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-","-")
         }
         return extractWeatherData(response)

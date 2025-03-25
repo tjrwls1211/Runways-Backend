@@ -35,7 +35,7 @@ class FineDustServiceImpl(
         // 요청 URI
         val uri = "$apiUrl?sidoName=$sido&pageNo=1&numOfRows=100&returnType=json&serviceKey=$apiKey&ver=1.0"
 
-        // 관측소 요청
+      // 관측소 요청
         val response: String = restTemplate.getForObject(uri, String::class.java) ?: return FineDustDataDTO("-","-", "-")
 
         val objectMapper = jacksonObjectMapper()
@@ -46,13 +46,14 @@ class FineDustServiceImpl(
         // 관측소 이름 추출
         val stationName = nearestLocation.daegioyem
 
-        println(stationName)
+        val stationNameSigungu = nearestLocation.sigungu
+
         // 해당 관측소의 미세먼지 값 추출
         for (item in items) {
             if (item["stationName"].asText() == stationName) {
                 val pm10value = item["pm10Value"].asText()
                 val pm25value = item["pm25Value"].asText()
-                return FineDustDataDTO(stationName,pm10value, pm25value)
+                return FineDustDataDTO(stationNameSigungu,pm10value, pm25value)
             }
         }
         return FineDustDataDTO("-","-", "-")
