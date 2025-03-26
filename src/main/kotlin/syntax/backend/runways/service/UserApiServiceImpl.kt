@@ -112,6 +112,7 @@ class UserApiServiceImpl(
             withdrawalUser.profileImageUrl = null
             withdrawalUser.updatedAt = LocalDateTime.now()
             withdrawalUser.marketing = false
+            withdrawalUser.device = null
             userApiRepository.save(withdrawalUser)
         } else {
             throw Exception("User not found")
@@ -123,11 +124,16 @@ class UserApiServiceImpl(
         val id = jwtUtil.extractUsername(token)
         val existingUser = userApiRepository.findById(id)
 
+        var cleanedDeviceId = deviceId
+        if (cleanedDeviceId.contains("{") || cleanedDeviceId.contains("}")) {
+            cleanedDeviceId = cleanedDeviceId.replace("{", "[").replace("}", "]")
+        }
+
         // 사용자가 존재하면 업데이트
         if (existingUser.isPresent) {
             val updatedUser = existingUser.get()
             updatedUser.updatedAt = LocalDateTime.now()
-            updatedUser.device = deviceId
+            updatedUser.device = cleanedDeviceId
             userApiRepository.save(updatedUser)
         } else {
             throw Exception("User not found")

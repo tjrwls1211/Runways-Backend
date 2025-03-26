@@ -15,9 +15,14 @@ class ExpoPushNotificationService {
     fun sendPushNotification(expoPushToken: String, title:String, message: String): String {
         val restTemplate = RestTemplate()
 
+        var cleanedDeviceId = expoPushToken
+        if (cleanedDeviceId.contains("{") || cleanedDeviceId.contains("}")) {
+            cleanedDeviceId = cleanedDeviceId.replace("{", "[").replace("}", "]")
+        }
+
         // Expo 푸시 알림 데이터 구성
         val requestBody = mapOf(
-            "to" to expoPushToken,  // Expo Go에서 받은 푸시 토큰
+            "to" to cleanedDeviceId,  // Expo Go에서 받은 푸시 토큰
             "title" to title,  // 알림 제목
             "body" to message  // 알림 내용
         )
