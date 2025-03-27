@@ -1,6 +1,7 @@
 package syntax.backend.runways.service
 
 import org.springframework.stereotype.Service
+import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CourseApiRepository
@@ -8,7 +9,7 @@ import java.util.*
 
 @Service
 class CourseApiServiceImpl(
-    private val courseApiRepository : CourseApiRepository,
+    private val courseApiRepository: CourseApiRepository,
     private val userApiService: UserApiService
 ) : CourseApiService {
 
@@ -32,5 +33,26 @@ class CourseApiServiceImpl(
         courseApiRepository.save(updatedCourse)
 
         return "Course updated successfully"
+    }
+
+    override fun getCourseById(courseId: UUID): ResponseCourseDTO {
+        val optCourseData = courseApiRepository.findById(courseId)
+        if (optCourseData.isPresent) {
+            val course = optCourseData.get()
+            return ResponseCourseDTO(
+                id = course.id,
+                title = course.title,
+                maker = course.maker,
+                bookmark = course.bookmark,
+                hits = course.hits,
+                distance = course.distance,
+                coordinate = course.coordinate,
+                mapUrl = course.mapUrl,
+                createdAt = course.createdAt,
+                updatedAt = course.updatedAt
+            )
+        } else {
+            throw Exception("Course not found")
+        }
     }
 }

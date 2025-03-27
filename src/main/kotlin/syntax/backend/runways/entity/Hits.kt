@@ -1,11 +1,10 @@
 package syntax.backend.runways.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import lombok.*
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import syntax.backend.runways.deserializer.HitsDeserializer
+import syntax.backend.runways.dto.DateCountDTO
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonIgnoreProperties(ignoreUnknown = true)
-@ToString
+@JsonDeserialize(using = HitsDeserializer::class)
 data class Hits(
-    val hits: List<DateCount> = emptyList()
+    val dateCounts: List<DateCountDTO> = emptyList()
 )

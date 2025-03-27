@@ -31,10 +31,10 @@ data class Course(
     val distance: Float = 0.0f,
 
     @Column(name = "coordinate", columnDefinition = "text")
-    val coordinate: String? = null,
+    val coordinate: String,
 
     @Column(name = "mapUrl", columnDefinition = "text")
-    val mapUrl: String? = null,
+    val mapUrl: String,
 
     @Column(name = "createdAt", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
