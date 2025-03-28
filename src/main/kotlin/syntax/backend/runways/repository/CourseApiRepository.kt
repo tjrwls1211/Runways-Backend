@@ -1,10 +1,17 @@
 package syntax.backend.runways.repository
 
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
 interface CourseApiRepository : JpaRepository<Course, UUID> {
-    fun findByMaker_IdAndStatusIn(makerId: String, statuses: List<CourseStatus>): List<Course>
+    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.maker.id = :makerId AND c.status IN :statuses")
+    fun findByMaker_IdAndStatusInWithTags(@Param("makerId") makerId: String, @Param("statuses") statuses: List<CourseStatus>): List<Course>
+
+    @Query("SELECT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id = :courseId")
+    fun findByIdWithTags(@Param("courseId") courseId: UUID): Optional<Course>
 }

@@ -1,10 +1,12 @@
 package syntax.backend.runways.entity
 
+import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.*
 import java.time.LocalDateTime
+import java.util.concurrent.CopyOnWriteArrayList
 
 @Entity
 @Table(name = "courses")
@@ -45,4 +47,12 @@ data class Course(
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     var status: CourseStatus = CourseStatus.PUBLIC,
-)
+
+    @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true,)
+    @JsonManagedReference
+    var courseTags: MutableList<CourseTag> = mutableListOf()
+) {
+    override fun toString(): String {
+        return "Course(id=$id, title='$title', maker=${maker.id}, status=$status)"
+    }
+}
