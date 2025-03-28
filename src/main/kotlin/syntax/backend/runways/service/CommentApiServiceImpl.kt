@@ -1,43 +1,52 @@
 package syntax.backend.runways.service
 
-import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import syntax.backend.runways.entity.Course
+import syntax.backend.runways.dto.ResponseCommentDTO
+import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
-import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
 import java.util.*
 
 @Service
-class CommentApiServiceImpl(
+class CommentApiServiceImpl (
     private val commentApiRepository: CommentApiRepository,
     private val courseApiRepository: CourseApiRepository,
     private val userApiService: UserApiService
-) : CourseApiService {
+) : CommentApiService {
 
     // 댓글 다 불러오기
-    override fun getCommentList(courseId: UUID, pageable: Pageable): List<Course> {
-        val commentData = commentApiRepository.findByPostId_Id(courseId, pageable)
-        return PageImpl(commentData, pageable)
+    override fun getCommentList(courseId: UUID, pageable:Pageable): List<ResponseCommentDTO> {
+        val commentData = commentApiRepository.findByPostId_IdOrderByCreatedAtDesc(courseId, pageable)
+        return commentData.map { comment ->
+            ResponseCommentDTO (
+                id = comment.id,
+                content = comment.content,
+                author = comment.author.nickname?: "",
+                createdAt = comment.createdAt,
+                updatedAt = comment.updatedAt,
+                reply = comment.reply?.id,
+            )
+        }
     }
 
     // 댓글 신규 작성
-    override fun insertComment(courseId: UUID, content: String, token: String): String {
+    override fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String {
         val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
         val user = userApiService.getUserDataFromToken(token)
 
+        val newComment = Comment(
+            content = content,
+            author = user,
+            postId = courseData,
+            status = CommentStatus.PUBLIC,
+            reply = commentApiRepository.findById(parentId).orElse(null),
+        )
 
-        if (courseData.maker.id != user.id) {
-            return "댓글 작성자가 아닙니다."
-        }
+        commentApiRepository.save(newComment)
 
-        // 새로운 객체 생성 후 저장
-        updatedUser.nickname = requestUserInfoDTO.nickname
-        commentApiRepository.save(updatedCourse)
-
-        return "댓글 업데이트 성공"
+        return "댓글 작성 성공"
     }
 
     // 댓글 업데이트
@@ -57,7 +66,7 @@ class CommentApiServiceImpl(
     }
 
     // 댓글 삭제
-    override fun deleteCourse(commentId: UUID, token: String): String {
+    override fun deleteComment(commentId: UUID, token: String): String {
         val commentData = commentApiRepository.findById(commentId)
         if (commentData.isPresent) {
             val comment = commentData.get()
