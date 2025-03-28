@@ -40,5 +40,9 @@ data class Course(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updatedAt", nullable = false)
-    val updatedAt: LocalDateTime = LocalDateTime.now()
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    var status: CourseStatus = CourseStatus.PUBLIC,
 )

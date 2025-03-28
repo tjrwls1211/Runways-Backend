@@ -11,9 +11,11 @@ class HitsDeserializer : JsonDeserializer<Hits>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Hits {
         val node: JsonNode = p.codec.readTree(p)
         val dateCounts = node.map {
+            val dateNode = it.get("date")
+            val countNode = it.get("count")
             DateCountDTO(
-                it["date"].asText(),
-                it["count"].asInt()
+                dateNode?.asText() ?: "",
+                countNode?.asInt() ?: 0
             )
         }
 

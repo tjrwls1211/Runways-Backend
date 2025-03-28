@@ -1,6 +1,7 @@
 package syntax.backend.runways.dto
 
 import syntax.backend.runways.entity.BookMark
+import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
 import syntax.backend.runways.entity.User
 import java.time.LocalDateTime
@@ -18,5 +19,6 @@ data class ResponseCourseDTO (
     val mapUrl: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
-    val author : Boolean
+    val author : Boolean,
+    val status : CourseStatus
 )

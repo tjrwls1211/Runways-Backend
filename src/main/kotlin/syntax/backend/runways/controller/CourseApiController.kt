@@ -36,4 +36,11 @@ class CourseApiController(
         val course = courseApiService.getCourseById(id, jwtToken)
         return ResponseEntity.ok(course)
     }
+
+    @DeleteMapping("/delete")
+    fun deleteCourse(@RequestHeader("Authorization") token: String, @RequestParam courseId: UUID): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.deleteCourse(courseId, jwtToken)
+        return ResponseEntity.ok(result)
+    }
 }
