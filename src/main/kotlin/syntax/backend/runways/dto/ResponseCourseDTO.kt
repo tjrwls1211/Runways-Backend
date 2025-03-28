@@ -20,5 +20,6 @@ data class ResponseCourseDTO (
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val author : Boolean,
-    val status : CourseStatus
+    val status : CourseStatus,
+    val tag : List<String>
 )

@@ -11,17 +11,17 @@ import java.util.*
 @Service
 class CourseApiServiceImpl(
     private val courseApiRepository: CourseApiRepository,
-    private val userApiService: UserApiService
+    private val userApiService: UserApiService,
 ) : CourseApiService {
 
-    // 만든 코스 다 불러오기
+    // 코스 리스트 조회
     override fun getCourseList(maker: User): List<Course> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
-        val courseData = courseApiRepository.findByMaker_IdAndStatusIn(maker.id, statuses)
+        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(maker.id, statuses)
         return courseData
     }
 
-    // 코스 업데이트
+    // TODO 코스 업데이트 - 태그 추가, (공개, 비공개) 상태 전환,
     override fun updateCourse(courseId: UUID, title: String, token: String): String {
         val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
         val user = userApiService.getUserDataFromToken(token)
@@ -39,7 +39,7 @@ class CourseApiServiceImpl(
 
     // 코스 상세정보
     override fun getCourseById(courseId: UUID, token: String): ResponseCourseDTO {
-        val optCourseData = courseApiRepository.findById(courseId)
+        val optCourseData = courseApiRepository.findByIdWithTags(courseId)
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
             return ResponseCourseDTO(
@@ -55,6 +55,7 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == userApiService.getUserDataFromToken(token).id,
                 status = course.status,
+                tag = course.courseTags.map { it.tag.name }
             )
         } else {
             throw Exception("코스를 찾을 수 없습니다.")
