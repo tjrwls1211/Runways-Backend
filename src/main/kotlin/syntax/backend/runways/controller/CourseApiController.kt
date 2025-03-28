@@ -31,8 +31,9 @@ class CourseApiController(
     }
 
     @GetMapping("/{id}")
-    fun getCourseById(@PathVariable id: UUID): ResponseEntity<ResponseCourseDTO> {
-        val course = courseApiService.getCourseById(id)
+    fun getCourseById(@PathVariable id: UUID, @RequestHeader("Authorization") token: String): ResponseEntity<ResponseCourseDTO> {
+        val jwtToken = token.substring(7)
+        val course = courseApiService.getCourseById(id, jwtToken)
         return ResponseEntity.ok(course)
     }
 }

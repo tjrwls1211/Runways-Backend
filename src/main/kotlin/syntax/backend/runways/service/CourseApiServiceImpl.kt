@@ -35,7 +35,7 @@ class CourseApiServiceImpl(
         return "Course updated successfully"
     }
 
-    override fun getCourseById(courseId: UUID): ResponseCourseDTO {
+    override fun getCourseById(courseId: UUID, token: String): ResponseCourseDTO {
         val optCourseData = courseApiRepository.findById(courseId)
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
@@ -49,7 +49,8 @@ class CourseApiServiceImpl(
                 coordinate = course.coordinate,
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
-                updatedAt = course.updatedAt
+                updatedAt = course.updatedAt,
+                author = course.maker.id == userApiService.getUserDataFromToken(token).id
             )
         } else {
             throw Exception("Course not found")

@@ -17,5 +17,6 @@ data class ResponseCourseDTO (
     val coordinate: String,
     val mapUrl: String,
     val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
+    val updatedAt: LocalDateTime,
+    val author : Boolean
 )

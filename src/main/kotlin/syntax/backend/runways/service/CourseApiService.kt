@@ -8,5 +8,5 @@ import java.util.*
 interface CourseApiService {
     fun getCourseList(maker: User): List<Course>
     fun updateCourse(courseId: UUID, title:String, token: String) : String
-    fun getCourseById(courseId: UUID): ResponseCourseDTO
+    fun getCourseById(courseId: UUID, token: String): ResponseCourseDTO
 }
