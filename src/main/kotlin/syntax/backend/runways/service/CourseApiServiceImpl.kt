@@ -3,6 +3,7 @@ package syntax.backend.runways.service
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.entity.Course
+import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CourseApiRepository
 import java.util.*
@@ -15,7 +16,8 @@ class CourseApiServiceImpl(
 
     // 만든 코스 다 불러오기
     override fun getCourseList(maker: User): List<Course> {
-        val courseData = courseApiRepository.findByMaker_Id(maker.id)
+        val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
+        val courseData = courseApiRepository.findByMaker_IdAndStatusIn(maker.id, statuses)
         return courseData
     }
 
@@ -25,16 +27,17 @@ class CourseApiServiceImpl(
         val user = userApiService.getUserDataFromToken(token)
 
         if (courseData.maker.id != user.id) {
-            return "Unauthorized: You are not the maker of this course"
+            return "코스 제작자가 아닙니다."
         }
 
         // 새로운 객체 생성 후 저장
         val updatedCourse = courseData.copy(title = title)
         courseApiRepository.save(updatedCourse)
 
-        return "Course updated successfully"
+        return "코스 업데이트 성공"
     }
 
+    // 코스 상세정보
     override fun getCourseById(courseId: UUID, token: String): ResponseCourseDTO {
         val optCourseData = courseApiRepository.findById(courseId)
         if (optCourseData.isPresent) {
@@ -50,10 +53,28 @@ class CourseApiServiceImpl(
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
-                author = course.maker.id == userApiService.getUserDataFromToken(token).id
+                author = course.maker.id == userApiService.getUserDataFromToken(token).id,
+                status = course.status,
             )
         } else {
-            throw Exception("Course not found")
+            throw Exception("코스를 찾을 수 없습니다.")
+        }
+    }
+
+    // 코스 삭제
+    override fun deleteCourse(courseId: UUID, token: String): String {
+        val optCourseData = courseApiRepository.findById(courseId)
+        if (optCourseData.isPresent) {
+            val course = optCourseData.get()
+            val user = userApiService.getUserDataFromToken(token)
+            if (course.maker.id != user.id) {
+                return "코스 제작자가 아닙니다."
+            }
+            course.status = CourseStatus.DELETED
+            courseApiRepository.save(course)
+            return "코스 삭제 성공"
+        } else{
+            return "코스를 찾을 수 없습니다."
         }
     }
 }
