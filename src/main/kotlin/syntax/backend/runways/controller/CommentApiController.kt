@@ -39,8 +39,8 @@ class CommentApiController(
         return ResponseEntity.ok(result)
     }
 
-    @DeleteMapping("/delete")
-    fun deleteComment(@RequestHeader("Authorization") token: String, @RequestParam commentId: UUID): ResponseEntity<String> {
+    @DeleteMapping("/delete/{commentId}")
+    fun deleteComment(@RequestHeader("Authorization") token: String, @PathVariable commentId: UUID): ResponseEntity<String> {
         val jwtToken = token.substring(7)
         val result = commentApiService.deleteComment(commentId, jwtToken)
         return ResponseEntity.ok(result)
