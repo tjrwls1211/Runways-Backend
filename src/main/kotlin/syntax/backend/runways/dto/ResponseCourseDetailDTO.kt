@@ -1,17 +1,16 @@
 package syntax.backend.runways.dto
 
-import syntax.backend.runways.entity.Bookmark
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
 import syntax.backend.runways.entity.User
 import java.time.LocalDateTime
 import java.util.*
 
-data class ResponseCourseDTO (
+data class ResponseCourseDetailDTO (
     val id: UUID,
     val title: String,
     val maker: User,
-    val bookmark: Bookmark,
+    val bookmark: Boolean,
     val hits: Hits,
     val distance: Float,
     // TODO 여기 수정해야됨 Linestring

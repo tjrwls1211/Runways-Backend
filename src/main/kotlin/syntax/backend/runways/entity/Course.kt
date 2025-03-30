@@ -6,7 +6,6 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.*
 import java.time.LocalDateTime
-import java.util.concurrent.CopyOnWriteArrayList
 
 @Entity
 @Table(name = "courses")
@@ -24,7 +23,7 @@ data class Course(
     val maker: User,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    var bookmark: BookMark = BookMark(),
+    var bookmark: Bookmark = Bookmark(),
 
     @JdbcTypeCode(SqlTypes.JSON)
     var hits: Hits = Hits(),
@@ -52,9 +51,6 @@ data class Course(
     @JsonManagedReference
     var courseTags: MutableList<CourseTag> = mutableListOf()
 ) {
-    fun addBookmark(userId: String) {
-        bookmark.addBookMark(userId)
-    }
     override fun toString(): String {
         return "Course(id=$id, title='$title', maker=${maker.id}, status=$status)"
     }

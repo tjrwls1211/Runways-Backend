@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestCourseIdDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
+import syntax.backend.runways.dto.ResponseCourseDetailDTO
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.service.CourseApiService
 import syntax.backend.runways.service.UserApiService
@@ -17,7 +18,7 @@ class CourseApiController(
 ) {
 
     @GetMapping("/list")
-    fun getCourseList(@RequestHeader("Authorization") token: String): ResponseEntity<List<Course>> {
+    fun getCourseList(@RequestHeader("Authorization") token: String): ResponseEntity<List<ResponseCourseDTO>> {
         val jwtToken = token.substring(7)
         val maker= userApiService.getUserDataFromToken(jwtToken)
         val courses = courseApiService.getCourseList(maker)
@@ -32,7 +33,7 @@ class CourseApiController(
     }
 
     @GetMapping("/{id}")
-    fun getCourseById(@PathVariable id: UUID, @RequestHeader("Authorization") token: String): ResponseEntity<ResponseCourseDTO> {
+    fun getCourseById(@PathVariable id: UUID, @RequestHeader("Authorization") token: String): ResponseEntity<ResponseCourseDetailDTO> {
         val jwtToken = token.substring(7)
         val course = courseApiService.getCourseById(id, jwtToken)
         return ResponseEntity.ok(course)
@@ -50,5 +51,12 @@ class CourseApiController(
         val jwtToken = token.substring(7)
         val result = courseApiService.addBookmark(requestCourseIdDTO.courseId, jwtToken)
         return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/all")
+    fun getAllCourses(@RequestHeader("Authorization") token:String): ResponseEntity<List<ResponseCourseDTO>> {
+        val jwtToken = token.substring(7)
+        val courses = courseApiService.getAllCourses(jwtToken)
+        return ResponseEntity.ok(courses)
     }
 }
