@@ -17,4 +17,7 @@ interface CourseApiRepository : JpaRepository<Course, UUID> {
 
     @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.status = :status")
     fun findByStatus(@Param("status") status: CourseStatus): List<Course>
+
+    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.title LIKE %:title% AND c.status = :status")
+    fun findByTitleContainingAndStatus(@Param("title") title: String, @Param("status") status: CourseStatus): List<Course>
 }

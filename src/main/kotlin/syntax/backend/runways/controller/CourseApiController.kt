@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestCourseIdDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
-import syntax.backend.runways.entity.Course
 import syntax.backend.runways.service.CourseApiService
 import syntax.backend.runways.service.UserApiService
 import java.util.UUID
@@ -65,5 +64,12 @@ class CourseApiController(
         val jwtToken = token.substring(7)
         val result = courseApiService.removeBookmark(requestCourseIdDTO.courseId, jwtToken)
         return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/search/{title}")
+    fun searchCoursesByTitle(@RequestHeader("Authorization") token: String, @PathVariable title: String): ResponseEntity<List<ResponseCourseDTO>> {
+        val jwtToken = token.substring(7)
+        val courses = courseApiService.searchCoursesByTitle(title, jwtToken)
+        return ResponseEntity.ok(courses)
     }
 }

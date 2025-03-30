@@ -15,4 +15,5 @@ interface CourseApiService {
     fun addBookmark(courseId: UUID, token: String): String
     fun getAllCourses(token: String): List<ResponseCourseDTO>
     fun removeBookmark(courseId: UUID, token: String): String
+    fun searchCoursesByTitle(title: String,token: String): List<ResponseCourseDTO>
 }

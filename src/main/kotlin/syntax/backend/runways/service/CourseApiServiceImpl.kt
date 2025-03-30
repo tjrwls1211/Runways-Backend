@@ -151,4 +151,28 @@ class CourseApiServiceImpl(
 
         return "북마크 삭제 성공"
     }
+
+    // 코스 검색
+    override fun searchCoursesByTitle(title: String, token: String): List<ResponseCourseDTO> {
+        val statuses = CourseStatus.PUBLIC
+        val courseData = courseApiRepository.findByTitleContainingAndStatus(title, statuses)
+        val maker = userApiService.getUserDataFromToken(token)
+        return courseData.map { course ->
+            ResponseCourseDTO(
+                id = course.id,
+                title = course.title,
+                maker = course.maker,
+                bookmark = course.bookmark,
+                hits = course.hits,
+                distance = course.distance,
+                coordinate = course.coordinate,
+                mapUrl = course.mapUrl,
+                createdAt = course.createdAt,
+                updatedAt = course.updatedAt,
+                author = course.maker.id == maker.id,
+                status = course.status,
+                tag = course.courseTags.map { it.tag.name }
+            )
+        }
+    }
 }
