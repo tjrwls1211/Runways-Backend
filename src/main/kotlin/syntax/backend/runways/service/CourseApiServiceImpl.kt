@@ -42,11 +42,14 @@ class CourseApiServiceImpl(
         val optCourseData = courseApiRepository.findByIdWithTags(courseId)
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
+            val user = userApiService.getUserDataFromToken(token)
+            val isBookmarked = course.bookmark.isBookmarked(user.id)
+
             return ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
-                bookmark = course.bookmark,
+                bookmark = isBookmarked,
                 hits = course.hits,
                 distance = course.distance,
                 coordinate = course.coordinate,

@@ -14,4 +14,7 @@ data class BookMark(
             bookMarkId.add(userId)
         }
     }
+    fun isBookmarked(userId: String): Boolean {
+        return bookMarkId.contains(userId)
+    }
 }

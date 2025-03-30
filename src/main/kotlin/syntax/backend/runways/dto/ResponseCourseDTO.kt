@@ -11,7 +11,7 @@ data class ResponseCourseDTO (
     val id: UUID,
     val title: String,
     val maker: User,
-    val bookmark: BookMark,
+    val bookmark: Boolean,
     val hits: Hits,
     val distance: Float,
     // TODO 여기 수정해야됨 Linestring
