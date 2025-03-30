@@ -1,7 +1,5 @@
 package syntax.backend.runways.dto
 
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Point
 import syntax.backend.runways.entity.Bookmark
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
@@ -23,5 +21,7 @@ data class ResponseCourseDTO (
     val updatedAt: LocalDateTime,
     val author : Boolean,
     val status : CourseStatus,
-    val tag : List<String>
+    val tag : List<String>,
+    val sido : String?,
+    val sigungu : String?
 )

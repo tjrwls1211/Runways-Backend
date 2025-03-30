@@ -2,7 +2,6 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.locationtech.jts.geom.Coordinates
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
@@ -16,9 +15,19 @@ import java.util.*
 class CourseApiServiceImpl(
     private val courseApiRepository: CourseApiRepository,
     private val userApiService: UserApiService,
+    private val locationApiService: LocationApiService
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
+
+    private fun extractCoordinates(position: String): Pair<Double, Double> {
+        val objectMapper = ObjectMapper()
+        val node = objectMapper.readTree(position)
+        val coordinates = node.get("coordinates")
+        val y = coordinates.get(0).asDouble()
+        val x = coordinates.get(1).asDouble()
+        return Pair(x, y)
+    }
 
     private fun removeCrsField(geoJson: String): String {
         val objectMapper = ObjectMapper()
@@ -38,6 +47,12 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)
 
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -52,7 +67,9 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == maker.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name }
+                tag = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
             )
         }
     }
@@ -87,6 +104,12 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)
 
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
             return ResponseCourseDetailDTO(
                 id = course.id,
                 title = course.title,
@@ -101,7 +124,9 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == user.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name }
+                tag = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
             )
         } else {
             throw Exception("코스를 찾을 수 없습니다.")
@@ -153,6 +178,12 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)
 
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -167,7 +198,9 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == maker.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name }
+                tag = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
             )
         }
     }
@@ -199,6 +232,13 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)
 
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -213,7 +253,9 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == maker.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name }
+                tag = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
             )
         }
     }
