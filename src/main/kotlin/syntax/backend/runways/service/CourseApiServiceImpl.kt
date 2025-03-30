@@ -39,7 +39,7 @@ class CourseApiServiceImpl(
 
     // TODO 코스 업데이트 - 태그 추가, (공개, 비공개) 상태 전환,
     override fun updateCourse(courseId: UUID, title: String, token: String): String {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
+        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다."
         val user = userApiService.getUserDataFromToken(token)
 
         if (courseData.maker.id != user.id) {
@@ -100,7 +100,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, token: String): String {
-        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다."
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -135,5 +135,20 @@ class CourseApiServiceImpl(
                 tag = course.courseTags.map { it.tag.name }
             )
         }
+    }
+
+    // 북마크 삭제
+    override fun removeBookmark(courseId: UUID, token: String): String {
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다"
+        val user = userApiService.getUserDataFromToken(token)
+
+        if (course.maker.id == user.id) {
+            return "자신의 코스는 북마크할 수 없습니다."
+        }
+
+        course.bookmark.removeBookMark(user.id)
+        courseApiRepository.save(course)
+
+        return "북마크 삭제 성공"
     }
 }

@@ -14,4 +14,7 @@ data class Bookmark(
     fun isBookmarked(userId: String): Boolean {
         return bookMarkId.contains(userId)
     }
+    fun removeBookMark(userId: String) {
+        bookMarkId.remove(userId)
+    }
 }

@@ -59,4 +59,11 @@ class CourseApiController(
         val courses = courseApiService.getAllCourses(jwtToken)
         return ResponseEntity.ok(courses)
     }
+
+    @PatchMapping("/bookmark/remove")
+    fun removeBookmark(@RequestHeader("Authorization") token: String, @RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.removeBookmark(requestCourseIdDTO.courseId, jwtToken)
+        return ResponseEntity.ok(result)
+    }
 }
