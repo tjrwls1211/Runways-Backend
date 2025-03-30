@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
 import java.util.*
 import java.time.LocalDateTime
 
@@ -31,8 +35,11 @@ data class Course(
     @Column(name = "distance", nullable = false)
     val distance: Float = 0.0f,
 
-    @Column(name = "coordinate", columnDefinition = "text")
-    val coordinate: String,
+    @Column(columnDefinition = "geometry(Point, 4326)")
+    val position: Point = GeometryFactory().createPoint(Coordinate(0.0, 0.0)),
+
+    @Column(columnDefinition = "geometry(LineString, 4326)")
+    val coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
 
     @Column(name = "mapUrl", columnDefinition = "text")
     val mapUrl: String,

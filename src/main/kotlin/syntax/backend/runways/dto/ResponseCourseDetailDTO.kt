@@ -1,5 +1,7 @@
 package syntax.backend.runways.dto
 
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
 import syntax.backend.runways.entity.User
@@ -13,8 +15,8 @@ data class ResponseCourseDetailDTO (
     val bookmark: Boolean,
     val hits: Hits,
     val distance: Float,
-    // TODO 여기 수정해야됨 Linestring
-    val coordinate: String,
+    val position: String?,
+    val coordinate: String?,
     val mapUrl: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,

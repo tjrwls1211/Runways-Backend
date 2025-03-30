@@ -1,11 +1,14 @@
 package syntax.backend.runways.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
+import org.locationtech.jts.geom.Coordinates
+import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
-import syntax.backend.runways.entity.Bookmark
 import syntax.backend.runways.repository.CourseApiRepository
 import java.util.*
 
@@ -15,18 +18,35 @@ class CourseApiServiceImpl(
     private val userApiService: UserApiService,
 ) : CourseApiService {
 
+    private val geoJsonWriter = GeoJsonWriter()
+
+    private fun removeCrsField(geoJson: String): String {
+        val objectMapper = ObjectMapper()
+        val node = objectMapper.readTree(geoJson) as ObjectNode
+        node.remove("crs")
+        return node.toString()
+    }
+
     override fun getCourseList(maker: User): List<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
         val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(maker.id, statuses)
+
         return courseData.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsField(geoJsonPosition)
+            val coordinateNode = removeCrsField(geoJsonCoordinate)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
                 bookmark = course.bookmark,
                 hits = course.hits,
+                position = positionNode,
+                coordinate = coordinateNode,
                 distance = course.distance,
-                coordinate = course.coordinate,
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
@@ -61,6 +81,12 @@ class CourseApiServiceImpl(
             val user = userApiService.getUserDataFromToken(token)
             val isBookmarked = course.bookmark.isBookmarked(user.id)
 
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsField(geoJsonPosition)
+            val coordinateNode = removeCrsField(geoJsonCoordinate)
+
             return ResponseCourseDetailDTO(
                 id = course.id,
                 title = course.title,
@@ -68,11 +94,12 @@ class CourseApiServiceImpl(
                 bookmark = isBookmarked,
                 hits = course.hits,
                 distance = course.distance,
-                coordinate = course.coordinate,
+                position = positionNode,
+                coordinate = coordinateNode,
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
-                author = course.maker.id == userApiService.getUserDataFromToken(token).id,
+                author = course.maker.id == user.id,
                 status = course.status,
                 tag = course.courseTags.map { it.tag.name }
             )
@@ -118,7 +145,14 @@ class CourseApiServiceImpl(
         val statuses = CourseStatus.PUBLIC
         val allCourseData = courseApiRepository.findByStatus(statuses)
         val maker = userApiService.getUserDataFromToken(token)
+
         return allCourseData.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsField(geoJsonPosition)
+            val coordinateNode = removeCrsField(geoJsonCoordinate)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -126,7 +160,8 @@ class CourseApiServiceImpl(
                 bookmark = course.bookmark,
                 hits = course.hits,
                 distance = course.distance,
-                coordinate = course.coordinate,
+                position = positionNode,
+                coordinate = coordinateNode,
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
@@ -158,6 +193,12 @@ class CourseApiServiceImpl(
         val courseData = courseApiRepository.findByTitleContainingAndStatus(title, statuses)
         val maker = userApiService.getUserDataFromToken(token)
         return courseData.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsField(geoJsonPosition)
+            val coordinateNode = removeCrsField(geoJsonCoordinate)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -165,7 +206,8 @@ class CourseApiServiceImpl(
                 bookmark = course.bookmark,
                 hits = course.hits,
                 distance = course.distance,
-                coordinate = course.coordinate,
+                position = positionNode,
+                coordinate = coordinateNode,
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
