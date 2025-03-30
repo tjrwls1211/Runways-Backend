@@ -7,6 +7,11 @@ import lombok.*
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
 data class BookMark(
-    val bookMarkId: List<String> = emptyList()
-)
-
+    val bookMarkId: MutableList<String> = mutableListOf()
+) {
+    fun addBookMark(userId: String) {
+        if (!bookMarkId.contains(userId)) {
+            bookMarkId.add(userId)
+        }
+    }
+}

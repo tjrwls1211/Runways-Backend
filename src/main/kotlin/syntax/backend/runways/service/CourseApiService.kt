@@ -10,4 +10,5 @@ interface CourseApiService {
     fun updateCourse(courseId: UUID, title:String, token: String) : String
     fun getCourseById(courseId: UUID, token: String): ResponseCourseDTO
     fun deleteCourse(courseId: UUID, token: String): String
+    fun addBookmark(courseId: UUID, token: String): String
 }

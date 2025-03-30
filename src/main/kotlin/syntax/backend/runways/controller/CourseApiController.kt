@@ -2,6 +2,7 @@ package syntax.backend.runways.controller
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import syntax.backend.runways.dto.RequestCourseIdDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.service.CourseApiService
@@ -41,6 +42,13 @@ class CourseApiController(
     fun deleteCourse(@RequestHeader("Authorization") token: String, @PathVariable courseId: UUID): ResponseEntity<String> {
         val jwtToken = token.substring(7)
         val result = courseApiService.deleteCourse(courseId, jwtToken)
+        return ResponseEntity.ok(result)
+    }
+
+    @PostMapping("/bookmark")
+    fun addBookmark(@RequestHeader("Authorization") token: String, @RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.addBookmark(requestCourseIdDTO.courseId, jwtToken)
         return ResponseEntity.ok(result)
     }
 }

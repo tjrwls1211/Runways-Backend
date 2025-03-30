@@ -78,4 +78,19 @@ class CourseApiServiceImpl(
             return "코스를 찾을 수 없습니다."
         }
     }
+
+    // 북마크 추가
+    override fun addBookmark(courseId: UUID, token: String): String {
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
+        val user = userApiService.getUserDataFromToken(token)
+
+        if (course.maker.id == user.id) {
+            return "자신의 코스는 북마크할 수 없습니다."
+        }
+
+        course.bookmark.addBookMark(user.id)
+        courseApiRepository.save(course)
+
+        return "북마크 추가 성공"
+    }
 }
