@@ -3,6 +3,8 @@ package syntax.backend.runways.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.locationtech.jts.io.geojson.GeoJsonWriter
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
@@ -36,9 +38,12 @@ class CourseApiServiceImpl(
         return node.toString()
     }
 
-    override fun getCourseList(maker: User): List<ResponseCourseDTO> {
+
+
+    // 마이페이지 코스 리스트
+    override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
-        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(maker.id, statuses)
+        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(maker.id, statuses, pageable)
 
         return courseData.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
@@ -166,9 +171,9 @@ class CourseApiServiceImpl(
     }
 
     // 전체 코스 조회
-    override fun getAllCourses(token: String): List<ResponseCourseDTO> {
+    override fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
-        val allCourseData = courseApiRepository.findByStatus(statuses)
+        val allCourseData = courseApiRepository.findByStatus(statuses, pageable)
         val maker = userApiService.getUserDataFromToken(token)
 
         return allCourseData.map { course ->
@@ -204,7 +209,6 @@ class CourseApiServiceImpl(
             )
         }
     }
-
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
         val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다"
@@ -221,9 +225,9 @@ class CourseApiServiceImpl(
     }
 
     // 코스 검색
-    override fun searchCoursesByTitle(title: String, token: String): List<ResponseCourseDTO> {
+    override fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
-        val courseData = courseApiRepository.findByTitleContainingAndStatus(title, statuses)
+        val courseData = courseApiRepository.findByTitleContainingAndStatus(title, statuses, pageable)
         val maker = userApiService.getUserDataFromToken(token)
         return courseData.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
@@ -237,7 +241,6 @@ class CourseApiServiceImpl(
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
-
 
             ResponseCourseDTO(
                 id = course.id,
