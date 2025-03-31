@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.NotificationDTO
 import syntax.backend.runways.dto.NotificationRequestDTO
+import syntax.backend.runways.dto.PagedResponse
 import syntax.backend.runways.service.ExpoPushNotificationService
 import syntax.backend.runways.service.NotificationApiService
 import java.util.UUID
@@ -21,10 +22,20 @@ class NotificationApiController(
         @RequestHeader("Authorization") token: String,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
-    ): List<NotificationDTO> {
+    ): ResponseEntity<PagedResponse<NotificationDTO>> {
         val pageable = PageRequest.of(page, size)
         val jwtToken = token.substring(7)
-        return notificationApiService.getNotifications(jwtToken, pageable).content
+        val notifications = notificationApiService.getNotifications(jwtToken, pageable)
+
+        val pagedResponse = PagedResponse(
+            content = notifications.content,
+            totalPages = notifications.totalPages,
+            totalElements = notifications.totalElements,
+            currentPage = notifications.number,
+            pageSize = notifications.size
+        )
+
+        return ResponseEntity.ok(pagedResponse)
     }
 
     @PatchMapping("/read")

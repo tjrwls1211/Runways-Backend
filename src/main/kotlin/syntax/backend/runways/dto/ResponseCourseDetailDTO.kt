@@ -1,17 +1,18 @@
 package syntax.backend.runways.dto
 
-import syntax.backend.runways.entity.Bookmark
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
 import syntax.backend.runways.entity.User
 import java.time.LocalDateTime
 import java.util.*
 
-data class ResponseCourseDTO (
+data class ResponseCourseDetailDTO (
     val id: UUID,
     val title: String,
     val maker: User,
-    val bookmark: Bookmark,
+    val bookmark: Boolean,
     val hits: Hits,
     val distance: Float,
     val position: String?,
@@ -23,5 +24,5 @@ data class ResponseCourseDTO (
     val status : CourseStatus,
     val tag : List<String>,
     val sido : String?,
-    val sigungu : String?
+    val sigungu : String?,
 )
