@@ -1,5 +1,6 @@
 package syntax.backend.runways.service
 
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestInsertCommentDTO
@@ -19,7 +20,8 @@ class CommentApiServiceImpl (
 
     // 댓글 다 불러오기
     override fun getCommentList(courseId: UUID, pageable:Pageable): List<ResponseCommentDTO> {
-        val commentData = commentApiRepository.findByPostId_IdOrderByCreatedAtDesc(courseId, pageable)
+        val status = CommentStatus.PUBLIC
+        val commentData = commentApiRepository. findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         return commentData.map { comment ->
             ResponseCommentDTO (
                 id = comment.id,
@@ -52,7 +54,7 @@ class CommentApiServiceImpl (
 
     // 댓글 업데이트
     override fun updateComment(commentId: UUID, content: String, token: String): String {
-        val commentData = commentApiRepository.findById(commentId).orElse(null) ?: return "Comment not found"
+        val commentData = commentApiRepository.findById(commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
         val user = userApiService.getUserDataFromToken(token)
 
         if (commentData.author.id != user.id) {
