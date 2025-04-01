@@ -6,7 +6,7 @@ import java.util.*
 
 interface CommentApiService {
     fun getCommentList(courseId: UUID, pageable:Pageable): List<ResponseCommentDTO>
-//    fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String
+    fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String
     fun updateComment(commentId: UUID, content: String, token: String): String
     fun deleteComment(commentId: UUID, token: String): String
 }

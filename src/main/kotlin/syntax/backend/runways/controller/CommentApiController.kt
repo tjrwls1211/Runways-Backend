@@ -25,13 +25,13 @@ class CommentApiController(
         return ResponseEntity.ok(comment)
     }
 
-    // 사용 중단
-//    @PostMapping("/insert")
-//    fun insertComment(@RequestHeader("Authorization") token: String, @RequestParam courseId: UUID, content: String, parentId: UUID ): ResponseEntity<String> {
-//        val jwtToken = token.substring(7)
-//        val result = commentApiService.insertComment(courseId, content, jwtToken, parentId)
-//        return ResponseEntity.ok(result)
-//    }
+    // TODO : 오류 해결해야함
+    @PostMapping("/insert")
+    fun insertComment(@RequestHeader("Authorization") token: String, @RequestParam courseId: UUID, content: String, parentId: UUID ): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val result = commentApiService.insertComment(courseId, content, jwtToken, parentId)
+        return ResponseEntity.ok(result)
+    }
 
     @PatchMapping("/update")
     fun updateComment(@RequestHeader("Authorization") token: String, @RequestParam commentId: UUID, content: String ): ResponseEntity<String> {

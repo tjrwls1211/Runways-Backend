@@ -31,23 +31,22 @@ class CommentApiServiceImpl (
         }
     }
 
-//    // 댓글 신규 작성
-//    override fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String {
-//        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
-//        val user = userApiService.getUserDataFromToken(token)
-//
-//        val newComment = Comment(
-//            content = content,
-//            author = user,
-//            postId = courseData,
-//            status = CommentStatus.PUBLIC,
-//            reply = commentApiRepository.findById(parentId).orElse(null),
-//        )
-//
-//        commentApiRepository.save(newComment)
-//
-//        return "댓글 작성 성공"
-//    }
+    override fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String {
+        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
+        val user = userApiService.getUserDataFromToken(token)
+
+        val newComment = Comment(
+            content = content,
+            author = user,
+            postId = courseData,
+            status = CommentStatus.PUBLIC,
+            reply = commentApiRepository.findById(parentId).orElse(null),
+        )
+
+        commentApiRepository.save(newComment)
+
+        return "댓글 작성 성공"
+    }
 
     // 댓글 업데이트
     override fun updateComment(commentId: UUID, content: String, token: String): String {
