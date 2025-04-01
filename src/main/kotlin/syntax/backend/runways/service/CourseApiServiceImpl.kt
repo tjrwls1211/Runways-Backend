@@ -38,8 +38,6 @@ class CourseApiServiceImpl(
         return node.toString()
     }
 
-
-
     // 마이페이지 코스 리스트
     override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)

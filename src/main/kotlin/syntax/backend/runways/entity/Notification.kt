@@ -8,7 +8,6 @@ import java.util.*
 @Table(name = "notifications")
 data class Notification (
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 
