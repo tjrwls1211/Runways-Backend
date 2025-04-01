@@ -8,7 +8,6 @@ import java.time.LocalDateTime
 @Table(name = "comments")
 data class Comment(
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 

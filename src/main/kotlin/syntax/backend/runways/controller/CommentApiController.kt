@@ -5,17 +5,13 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
-import syntax.backend.runways.entity.Comment
-import syntax.backend.runways.repository.DeatgulApiRepository
 import syntax.backend.runways.service.CommentApiService
-import syntax.backend.runways.service.DeatgulApiService
 import java.util.UUID
 
 @RestController
 @RequestMapping("api/comment")
 class CommentApiController(
-    private val commentApiService: CommentApiService,
-    private val deatgulApiService: DeatgulApiService,
+    private val commentApiService: CommentApiService
 ) {
 
     // TODO : PUBLIC만 나오도록
@@ -30,11 +26,10 @@ class CommentApiController(
         return ResponseEntity.ok(comment)
     }
 
-    // TODO : 오류 해결해야함
     @PostMapping("/insert")
     fun insertComment(@RequestHeader("Authorization") token: String, @RequestBody requestInsertCommentDTO: RequestInsertCommentDTO): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        val result = deatgulApiService.insertDeatgul(requestInsertCommentDTO, jwtToken)
+        val result = commentApiService.insertComment(requestInsertCommentDTO, jwtToken)
         return ResponseEntity.ok(result)
     }
 
