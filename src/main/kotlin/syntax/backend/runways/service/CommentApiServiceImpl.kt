@@ -2,6 +2,7 @@ package syntax.backend.runways.service
 
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
 import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
@@ -26,21 +27,22 @@ class CommentApiServiceImpl (
                 author = comment.author.nickname?: "",
                 createdAt = comment.createdAt,
                 updatedAt = comment.updatedAt,
-                reply = comment.reply?.id,
+                parent = comment.parent?.id,
             )
         }
     }
 
-    override fun insertComment(courseId: UUID, content: String, token: String, parentId:UUID): String {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "Course not found"
+    override fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, token: String): String {
+        val courseData = courseApiRepository.findById(requestInsertCommentDTO.courseId).orElse(null) ?: return "Course not found"
         val user = userApiService.getUserDataFromToken(token)
+        val parent = requestInsertCommentDTO.parentId?.let { commentApiRepository.findById(it).orElse(null) }
 
         val newComment = Comment(
-            content = content,
+            content = requestInsertCommentDTO.content,
             author = user,
             postId = courseData,
             status = CommentStatus.PUBLIC,
-            reply = commentApiRepository.findById(parentId).orElse(null),
+            parent = parent,
         )
 
         commentApiRepository.save(newComment)

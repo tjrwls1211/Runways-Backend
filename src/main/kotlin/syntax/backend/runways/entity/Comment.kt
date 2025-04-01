@@ -30,8 +30,8 @@ data class Comment(
     val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @ManyToOne
-    @JoinColumn(name = "reply", referencedColumnName = "id")
-    var reply: Comment? = null,
+    @JoinColumn(name = "parent", referencedColumnName = "id")
+    var parent: Comment? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

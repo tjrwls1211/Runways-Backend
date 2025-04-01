@@ -3,6 +3,7 @@ package syntax.backend.runways.controller
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
 import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.service.CommentApiService
@@ -27,9 +28,9 @@ class CommentApiController(
 
     // TODO : 오류 해결해야함
     @PostMapping("/insert")
-    fun insertComment(@RequestHeader("Authorization") token: String, @RequestParam courseId: UUID, content: String, parentId: UUID ): ResponseEntity<String> {
+    fun insertComment(@RequestHeader("Authorization") token: String, @RequestBody requestInsertCommentDTO: RequestInsertCommentDTO): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        val result = commentApiService.insertComment(courseId, content, jwtToken, parentId)
+        val result = commentApiService.insertComment(requestInsertCommentDTO, jwtToken)
         return ResponseEntity.ok(result)
     }
 
