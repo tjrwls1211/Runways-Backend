@@ -168,20 +168,20 @@ class CourseApiServiceImpl(
         return "북마크 추가 성공"
     }
 
-    // 전체 코스 조회
+    // 전체 코스 리스트
     override fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
         val allCourseData = courseApiRepository.findByStatus(statuses, pageable)
         val maker = userApiService.getUserDataFromToken(token)
 
         return allCourseData.map { course ->
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+            val geoJsonPosition = if (course.position != null) geoJsonWriter.write(course.position) else "{}"
+            val geoJsonCoordinate = if (course.coordinate != null) geoJsonWriter.write(course.coordinate) else "{}"
 
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)
 
-            val (x, y) = extractCoordinates(geoJsonPosition)
+            val (x, y) = if (geoJsonPosition != "{}") extractCoordinates(geoJsonPosition) else Pair(0.0, 0.0)
 
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
