@@ -34,10 +34,10 @@ data class Course(
     @Column(name = "distance", nullable = false)
     val distance: Float = 0.0f,
 
-    @Column(columnDefinition = "geometry(Point, 4326)")
+    @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
     val position: Point = GeometryFactory().createPoint(Coordinate(0.0, 0.0)),
 
-    @Column(columnDefinition = "geometry(LineString, 4326)")
+    @Column(columnDefinition = "geometry(LineString, 4326)", nullable = false)
     val coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
 
     @Column(name = "mapUrl", columnDefinition = "text")
