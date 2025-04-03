@@ -2,12 +2,15 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import jakarta.persistence.Entity
+import jakarta.persistence.EntityNotFoundException
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
@@ -81,6 +84,7 @@ class CourseApiServiceImpl(
         )
         courseApiRepository.save(newCourse)
     }
+
     // 마이페이지 코스 리스트
     override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
@@ -125,7 +129,7 @@ class CourseApiServiceImpl(
 
     // 코스 업데이트
     override fun updateCourse(courseId: UUID, title: String, token: String): String {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다."
+        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         val user = userApiService.getUserDataFromToken(token)
 
         if (courseData.maker.id != user.id) {
@@ -204,7 +208,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, token: String): String {
-        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다."
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -262,7 +266,7 @@ class CourseApiServiceImpl(
 
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
-        val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다"
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -315,5 +319,15 @@ class CourseApiServiceImpl(
                 commentCount = commentCount,
             )
         }
+    }
+
+    // 코스 조회수 증가
+    @Transactional
+    override fun increaseHits(courseId: UUID): String {
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        course.hits.increaseHits()
+        println(course.hits)
+        courseApiRepository.save(course)
+        return "조회수 증가 성공"
     }
 }

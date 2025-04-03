@@ -20,4 +20,5 @@ interface CourseApiService {
     fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO>
     fun getCourseData(courseId: UUID): Course
     fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
+    fun increaseHits(courseId: UUID): String
 }

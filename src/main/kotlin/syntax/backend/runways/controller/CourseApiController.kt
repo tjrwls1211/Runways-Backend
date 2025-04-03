@@ -121,4 +121,11 @@ class CourseApiController(
 
         return ResponseEntity.ok(pagedResponse)
     }
+
+    @PostMapping("/hits")
+    fun increaseHits(@RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
+        val result = courseApiService.increaseHits(requestCourseIdDTO.courseId)
+        return ResponseEntity.ok(result)
+    }
+
 }
