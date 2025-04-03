@@ -11,5 +11,5 @@ interface CommentApiService {
     fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, token: String): ResponseCommentDTO
     fun updateComment(commentId: UUID, content: String, token: String): String
     fun deleteComment(commentId: UUID, token: String): String
-    fun getChildCommentList(courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO>
+    fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO>
 }

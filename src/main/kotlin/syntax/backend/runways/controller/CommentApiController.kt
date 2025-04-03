@@ -1,6 +1,6 @@
 package syntax.backend.runways.controller
 
-import syntax.backend.runways.dto.CommentListResponseDTO
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -19,12 +19,22 @@ class CommentApiController(
         @RequestParam courseId: UUID,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<CommentListResponseDTO> {
+    ): ResponseEntity<Page<ResponseCommentDTO>> {
         val pageable = PageRequest.of(page, size)
         val parentComments = commentApiService.getParentCommentList(courseId, pageable)
-        val childComments = commentApiService.getChildCommentList(courseId, pageable)
-        val response = CommentListResponseDTO(parentComments, childComments)
-        return ResponseEntity.ok(response)
+        return ResponseEntity.ok(parentComments)
+    }
+
+    @GetMapping("/list/{parentId}")
+    fun getChildCommentList(
+        @PathVariable parentId: UUID,
+        @RequestParam courseId: UUID,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int
+    ): ResponseEntity<Page<ResponseCommentDTO>> {
+        val pageable = PageRequest.of(page, size)
+        val childComments = commentApiService.getChildCommentList(parentId, courseId, pageable)
+        return ResponseEntity.ok(childComments)
     }
 
     // 댓글 입력

@@ -45,11 +45,11 @@ class CommentApiServiceImpl (
     }
 
     // 댓글 불러오기(답글 O)
-    override fun getChildCommentList(courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO> {
+    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO> {
         val status = CommentStatus.PUBLIC
         val commentData = commentApiRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         val filteredComments = commentData
-            .filter { it.parent != null }
+            .filter { it.parent?.id == parentId }
             .map { comment ->
                 val childCount = commentApiRepository.countByParent_Id(comment.id)
                 ResponseCommentDTO(
