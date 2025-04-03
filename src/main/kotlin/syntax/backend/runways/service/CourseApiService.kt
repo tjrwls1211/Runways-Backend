@@ -2,6 +2,7 @@ package syntax.backend.runways.service
 
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
 import syntax.backend.runways.entity.Course
@@ -18,4 +19,5 @@ interface CourseApiService {
     fun removeBookmark(courseId: UUID, token: String): String
     fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO>
     fun getCourseData(courseId: UUID): Course
+    fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
 }

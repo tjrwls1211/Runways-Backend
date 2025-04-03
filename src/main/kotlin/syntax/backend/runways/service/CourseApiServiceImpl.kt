@@ -2,10 +2,13 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
 import syntax.backend.runways.entity.Course
@@ -52,6 +55,32 @@ class CourseApiServiceImpl(
         return commentApiRepository.countByPostId_Id(courseId)
     }
 
+    // 코스 생성
+    override fun createCourse(requestCourseDTO: RequestCourseDTO, token: String) {
+        val user = userApiService.getUserDataFromToken(token)
+        val geometryFactory = GeometryFactory()
+
+        // Point 변환
+        val positionCoordinates = requestCourseDTO.position.split(",").map { it.toDouble() }
+        val position = geometryFactory.createPoint(Coordinate(positionCoordinates[0], positionCoordinates[1]))
+
+        // LineString 변환
+        val coordinatePairs = requestCourseDTO.coordinate.split(";").map {
+            val coords = it.split(",").map { coord -> coord.toDouble() }
+            Coordinate(coords[0], coords[1])
+        }.toTypedArray()
+        val coordinate = geometryFactory.createLineString(coordinatePairs)
+
+        val newCourse = Course(
+            title = requestCourseDTO.title,
+            maker = user,
+            distance = requestCourseDTO.distance,
+            position = position,
+            coordinate = coordinate,
+            mapUrl = requestCourseDTO.mapUrl
+        )
+        courseApiRepository.save(newCourse)
+    }
     // 마이페이지 코스 리스트
     override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)

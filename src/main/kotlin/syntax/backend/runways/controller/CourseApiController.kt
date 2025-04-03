@@ -3,10 +3,7 @@ package syntax.backend.runways.controller
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import syntax.backend.runways.dto.PagedResponse
-import syntax.backend.runways.dto.RequestCourseIdDTO
-import syntax.backend.runways.dto.ResponseCourseDTO
-import syntax.backend.runways.dto.ResponseCourseDetailDTO
+import syntax.backend.runways.dto.*
 import syntax.backend.runways.service.CourseApiService
 import syntax.backend.runways.service.UserApiService
 import java.util.UUID
@@ -17,6 +14,13 @@ class CourseApiController(
     private val courseApiService: CourseApiService,
     private val userApiService: UserApiService,
 ) {
+
+    @PostMapping("/insert")
+    fun createCourse(@RequestHeader("Authorization") token: String, @RequestBody requestCourseDTO: RequestCourseDTO): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        courseApiService.createCourse(requestCourseDTO, jwtToken)
+        return ResponseEntity.ok("코스 생성 성공")
+    }
 
     @GetMapping("/list")
     fun getCourseList(

@@ -12,7 +12,7 @@ data class ResponseCourseDTO (
     val title: String,
     val maker: User,
     val bookmark: Bookmark,
-    val hits: Hits,
+    val hits: Hits?,
     val distance: Float,
     val position: String?,
     val coordinate: String?,
