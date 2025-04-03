@@ -23,5 +23,6 @@ data class ResponseCourseDTO (
     val status : CourseStatus,
     val tag : List<String>,
     val sido : String?,
-    val sigungu : String?
+    val sigungu : String?,
+    val commentCount : Long,
 )

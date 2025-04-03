@@ -8,8 +8,10 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
+import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
+import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
 import java.util.*
 
@@ -17,7 +19,8 @@ import java.util.*
 class CourseApiServiceImpl(
     private val courseApiRepository: CourseApiRepository,
     private val userApiService: UserApiService,
-    private val locationApiService: LocationApiService
+    private val locationApiService: LocationApiService,
+    private val commentApiRepository: CommentApiRepository
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -38,6 +41,17 @@ class CourseApiServiceImpl(
         return node.toString()
     }
 
+    // 코스 데이터 호출
+    override fun getCourseData(courseId: UUID): Course {
+        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw Exception("코스를 찾을 수 없습니다.")
+        return courseData
+    }
+
+    // 댓글 개수 호출
+    private fun getCommentCount(courseId: UUID): Long {
+        return commentApiRepository.countByPostId_Id(courseId)
+    }
+
     // 마이페이지 코스 리스트
     override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
@@ -56,6 +70,8 @@ class CourseApiServiceImpl(
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            val commentCount = getCommentCount(course.id)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -73,11 +89,12 @@ class CourseApiServiceImpl(
                 tag = course.courseTags.map { it.tag.name },
                 sido = sido,
                 sigungu = sigungu,
+                commentCount = commentCount
             )
         }
     }
 
-    // TODO 코스 업데이트 - 태그 추가, (공개, 비공개) 상태 전환,
+    // 코스 업데이트
     override fun updateCourse(courseId: UUID, title: String, token: String): String {
         val courseData = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다."
         val user = userApiService.getUserDataFromToken(token)
@@ -96,6 +113,8 @@ class CourseApiServiceImpl(
     // 코스 상세정보
     override fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO {
         val optCourseData = courseApiRepository.findByIdWithTags(courseId)
+        val commentCount = getCommentCount(courseId)
+
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
             val user = userApiService.getUserDataFromToken(token)
@@ -130,6 +149,7 @@ class CourseApiServiceImpl(
                 tag = course.courseTags.map { it.tag.name },
                 sido = sido,
                 sigungu = sigungu,
+                commentCount = commentCount,
             )
         } else {
             throw Exception("코스를 찾을 수 없습니다.")
@@ -148,7 +168,7 @@ class CourseApiServiceImpl(
             course.status = CourseStatus.DELETED
             courseApiRepository.save(course)
             return "코스 삭제 성공"
-        } else{
+        } else {
             return "코스를 찾을 수 없습니다."
         }
     }
@@ -187,6 +207,8 @@ class CourseApiServiceImpl(
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            val commentCount = getCommentCount(course.id)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -204,9 +226,11 @@ class CourseApiServiceImpl(
                 tag = course.courseTags.map { it.tag.name },
                 sido = sido,
                 sigungu = sigungu,
+                commentCount = commentCount,
             )
         }
     }
+
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
         val course = courseApiRepository.findById(courseId).orElse(null) ?: return "코스를 찾을 수 없습니다"
@@ -240,6 +264,8 @@ class CourseApiServiceImpl(
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            val commentCount = getCommentCount(course.id)
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -257,6 +283,7 @@ class CourseApiServiceImpl(
                 tag = course.courseTags.map { it.tag.name },
                 sido = sido,
                 sigungu = sigungu,
+                commentCount = commentCount,
             )
         }
     }

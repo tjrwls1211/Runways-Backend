@@ -1,6 +1,6 @@
 package syntax.backend.runways.controller
 
-import org.springframework.data.domain.Page
+import syntax.backend.runways.dto.CommentListResponseDTO
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -14,22 +14,22 @@ import java.util.UUID
 class CommentApiController(
     private val commentApiService: CommentApiService
 ) {
-
-    // 댓글 조회
     @GetMapping("/list")
     fun getCommentList(
         @RequestParam courseId: UUID,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<Page<ResponseCommentDTO>> {
+    ): ResponseEntity<CommentListResponseDTO> {
         val pageable = PageRequest.of(page, size)
-        val comment = commentApiService.getCommentList(courseId, pageable)
-        return ResponseEntity.ok(comment)
+        val parentComments = commentApiService.getParentCommentList(courseId, pageable)
+        val childComments = commentApiService.getChildCommentList(courseId, pageable)
+        val response = CommentListResponseDTO(parentComments, childComments)
+        return ResponseEntity.ok(response)
     }
 
     // 댓글 입력
     @PostMapping("/insert")
-    fun insertComment(@RequestHeader("Authorization") token: String, @RequestBody requestInsertCommentDTO: RequestInsertCommentDTO): ResponseEntity<String> {
+    fun insertComment(@RequestHeader("Authorization") token: String, @RequestBody requestInsertCommentDTO: RequestInsertCommentDTO): ResponseEntity<ResponseCommentDTO> {
         val jwtToken = token.substring(7)
         val result = commentApiService.insertComment(requestInsertCommentDTO, jwtToken)
         return ResponseEntity.ok(result)
