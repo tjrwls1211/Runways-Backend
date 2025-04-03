@@ -195,8 +195,8 @@ class CourseApiServiceImpl(
         val maker = userApiService.getUserDataFromToken(token)
 
         return allCourseData.map { course ->
-            val geoJsonPosition = if (course.position != null) geoJsonWriter.write(course.position) else "{}"
-            val geoJsonCoordinate = if (course.coordinate != null) geoJsonWriter.write(course.coordinate) else "{}"
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
             val positionNode = removeCrsField(geoJsonPosition)
             val coordinateNode = removeCrsField(geoJsonCoordinate)

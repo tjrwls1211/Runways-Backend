@@ -14,6 +14,7 @@ import java.util.UUID
 class CommentApiController(
     private val commentApiService: CommentApiService
 ) {
+    // 댓글 조회
     @GetMapping("/list")
     fun getCommentList(
         @RequestParam courseId: UUID,
@@ -25,6 +26,7 @@ class CommentApiController(
         return ResponseEntity.ok(parentComments)
     }
 
+    // 답글 조회
     @GetMapping("/list/{parentId}")
     fun getChildCommentList(
         @PathVariable parentId: UUID,

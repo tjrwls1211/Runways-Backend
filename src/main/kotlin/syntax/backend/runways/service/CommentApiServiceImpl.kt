@@ -134,6 +134,7 @@ class CommentApiServiceImpl (
     // 댓글 삭제
     override fun deleteComment(commentId: UUID, token: String): String {
         val commentData = commentApiRepository.findById(commentId)
+        val childComment = commentApiRepository.findByParentId_Id(commentId)
         if (commentData.isPresent) {
             val comment = commentData.get()
             val user = userApiService.getUserDataFromToken(token)
@@ -142,6 +143,12 @@ class CommentApiServiceImpl (
             }
             comment.status = CommentStatus.DELETED
             commentApiRepository.save(comment)
+            if (childComment.isNotEmpty()) {
+                for (child in childComment) {
+                    child.status = CommentStatus.DELETED
+                    commentApiRepository.save(child)
+                }
+            }
             return "댓글 삭제 성공"
         } else {
             throw EntityNotFoundException("댓글을 찾을 수 없습니다.")
