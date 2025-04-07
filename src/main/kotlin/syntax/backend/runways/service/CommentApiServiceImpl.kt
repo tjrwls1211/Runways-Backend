@@ -30,7 +30,7 @@ class CommentApiServiceImpl (
         val filteredComments = commentData
             .filter { it.parent == null }
             .map { comment ->
-                val childCount = commentApiRepository.countByParent_Id(comment.id)
+                val childCount = commentApiRepository.countByParent_IdAndStatus(comment.id, status)
                 ResponseCommentDTO(
                     id = comment.id,
                     content = comment.content,
@@ -51,7 +51,7 @@ class CommentApiServiceImpl (
         val filteredComments = commentData
             .filter { it.parent?.id == parentId }
             .map { comment ->
-                val childCount = commentApiRepository.countByParent_Id(comment.id)
+                val childCount = commentApiRepository.countByParent_IdAndStatus(comment.id, status)
                 ResponseCommentDTO(
                     id = comment.id,
                     content = comment.content,

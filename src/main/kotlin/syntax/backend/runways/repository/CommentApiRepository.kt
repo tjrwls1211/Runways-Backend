@@ -9,7 +9,7 @@ import java.util.*
 
 interface CommentApiRepository : JpaRepository<Comment, UUID> {
     fun findByPostId_IdAndStatusOrderByCreatedAtDesc(postId: UUID, status: CommentStatus, pageable: Pageable): Page<Comment>
-    fun countByPostId_Id(postId: UUID): Long
-    fun countByParent_Id(parentId: UUID): Long
+    fun countByPostId_IdAndStatus(postId: UUID, status: CommentStatus): Long
+    fun countByParent_IdAndStatus(parentId: UUID, status: CommentStatus): Long
     fun findByParentId_Id(parentId: UUID): List<Comment>
 }

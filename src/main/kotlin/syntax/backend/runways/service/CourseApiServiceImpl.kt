@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
+import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
@@ -55,7 +56,8 @@ class CourseApiServiceImpl(
 
     // 댓글 개수 호출
     private fun getCommentCount(courseId: UUID): Long {
-        return commentApiRepository.countByPostId_Id(courseId)
+        val commentStatus = CommentStatus.PUBLIC
+        return commentApiRepository.countByPostId_IdAndStatus(courseId, commentStatus)
     }
 
     // 코스 생성
