@@ -90,14 +90,24 @@ class CommentApiServiceImpl (
         val message: String
         val recipient: User
 
-        if (parent == null) {
+        if (parent == null && courseData.maker.id != user.id) {
             expoPushToken = courseData.maker.device ?: throw EntityNotFoundException("디바이스 토큰을 찾을 수 없습니다.")
             message = "${user.nickname}님이 코스에 댓글을 남겼어요 : ${requestInsertCommentDTO.content}"
             recipient = courseData.maker
-        } else {
+        } else if (parent != null && parent.author.id != user.id) {
             expoPushToken = parent.author.device ?: throw EntityNotFoundException("디바이스 토큰을 찾을 수 없습니다.")
             message = "${user.nickname}님이 댓글에 답글을 남겼어요 : ${requestInsertCommentDTO.content}"
             recipient = parent.author
+        } else {
+            return ResponseCommentDTO(
+                id = newComment.id,
+                content = newComment.content,
+                author = newComment.author.nickname ?: "",
+                createdAt = newComment.createdAt,
+                updatedAt = newComment.updatedAt,
+                parent = newComment.parent?.id,
+                childCount = 0
+            )
         }
 
         notificationApiService.addNotification(title, message, recipient, type)
@@ -134,7 +144,7 @@ class CommentApiServiceImpl (
     // 댓글 삭제
     override fun deleteComment(commentId: UUID, token: String): String {
         val commentData = commentApiRepository.findById(commentId)
-        val childComment = commentApiRepository.findByParentId_Id(commentId)
+        val childComment = commentApiRepository.findByParent_Id(commentId)
         if (commentData.isPresent) {
             val comment = commentData.get()
             val user = userApiService.getUserDataFromToken(token)
