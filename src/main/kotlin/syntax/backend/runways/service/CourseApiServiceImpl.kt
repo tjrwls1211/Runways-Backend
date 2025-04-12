@@ -2,7 +2,6 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import jakarta.persistence.Entity
 import jakarta.persistence.EntityNotFoundException
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -28,7 +27,8 @@ class CourseApiServiceImpl(
     private val courseApiRepository: CourseApiRepository,
     private val userApiService: UserApiService,
     private val locationApiService: LocationApiService,
-    private val commentApiRepository: CommentApiRepository
+    private val commentApiRepository: CommentApiRepository,
+    private val courseQueryService: CourseQueryService
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -42,11 +42,11 @@ class CourseApiServiceImpl(
         return Pair(x, y)
     }
 
-    private fun removeCrsField(geoJson: String): String {
+    private fun removeCrsFieldAsJsonNode(geoJson: String): ObjectNode {
         val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(geoJson) as ObjectNode
         node.remove("crs")
-        return node.toString()
+        return node
     }
 
     // 코스 데이터 호출
@@ -89,45 +89,13 @@ class CourseApiServiceImpl(
     }
 
     // 마이페이지 코스 리스트
-    override fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
-        val statuses = listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
-        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(maker.id, statuses, pageable)
+    override fun getMyCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
+        return courseQueryService.getCourseList(maker.id, pageable, false)
+    }
 
-        return courseData.map { course ->
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
-
-            val positionNode = removeCrsField(geoJsonPosition)
-            val coordinateNode = removeCrsField(geoJsonCoordinate)
-
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
-            val commentCount = getCommentCount(course.id)
-
-            ResponseCourseDTO(
-                id = course.id,
-                title = course.title,
-                maker = course.maker,
-                bookmark = course.bookmark,
-                hits = course.hits,
-                position = positionNode,
-                coordinate = coordinateNode,
-                distance = course.distance,
-                mapUrl = course.mapUrl,
-                createdAt = course.createdAt,
-                updatedAt = course.updatedAt,
-                author = course.maker.id == maker.id,
-                status = course.status,
-                tag = course.courseTags.map { it.tag.name },
-                sido = sido,
-                sigungu = sigungu,
-                commentCount = commentCount
-            )
-        }
+    // 공개 코스 조회
+    override fun getCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+        return courseQueryService.getCourseList(userId, pageable, true)
     }
 
     // 코스 업데이트
@@ -159,8 +127,8 @@ class CourseApiServiceImpl(
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
-            val positionNode = removeCrsField(geoJsonPosition)
-            val coordinateNode = removeCrsField(geoJsonCoordinate)
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
             val (x, y) = extractCoordinates(geoJsonPosition)
 
@@ -234,8 +202,8 @@ class CourseApiServiceImpl(
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
-            val positionNode = removeCrsField(geoJsonPosition)
-            val coordinateNode = removeCrsField(geoJsonCoordinate)
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
             val (x, y) = if (geoJsonPosition != "{}") extractCoordinates(geoJsonPosition) else Pair(0.0, 0.0)
 
@@ -291,8 +259,8 @@ class CourseApiServiceImpl(
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
-            val positionNode = removeCrsField(geoJsonPosition)
-            val coordinateNode = removeCrsField(geoJsonCoordinate)
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
             val (x, y) = extractCoordinates(geoJsonPosition)
 

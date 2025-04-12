@@ -1,10 +1,16 @@
 package syntax.backend.runways.service
 
+import jakarta.persistence.Entity
+import jakarta.persistence.EntityNotFoundException
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestUserInfoDTO
-import syntax.backend.runways.dto.ResponseUserInfoDTO
+import syntax.backend.runways.dto.ResponseCourseDTO
+import syntax.backend.runways.dto.ResponseMyInfoDTO
+import syntax.backend.runways.dto.UserProfileWithCoursesDTO
 import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
+import syntax.backend.runways.repository.CourseApiRepository
 import syntax.backend.runways.repository.UserApiRepository
 import syntax.backend.runways.util.JwtUtil
 import java.time.LocalDate
@@ -14,7 +20,8 @@ import java.util.*
 @Service
 class UserApiServiceImpl(
     private val userApiRepository: UserApiRepository,
-    private val jwtUtil: JwtUtil
+    private val jwtUtil: JwtUtil,
+    private val courseQueryService: CourseQueryService
 ) : UserApiService {
 
     // 토큰에서 유저 정보 가져오기
@@ -29,12 +36,12 @@ class UserApiServiceImpl(
     }
 
     // 토큰으로 사용자 정보 반환
-    override fun getUserInfoFromToken(token: String): ResponseUserInfoDTO {
+    override fun getUserInfoFromToken(token: String): ResponseMyInfoDTO {
         val id = jwtUtil.extractUsername(token)
         val user: Optional<User> = userApiRepository.findById(id)
         if (user.isPresent) {
             val userInfo = user.get()
-            return ResponseUserInfoDTO(
+            return ResponseMyInfoDTO(
                 userInfo.name,
                 userInfo.email,
                 userInfo.platform,
@@ -45,11 +52,30 @@ class UserApiServiceImpl(
                 userInfo.follow,
                 userInfo.follow.followers,
                 userInfo.follow.following,
-                userInfo.marketing
+                userInfo.marketing,
+                userInfo.accountPrivate
                 )
         } else {
-            throw Exception("User not found")
+            throw EntityNotFoundException("User not found")
         }
+    }
+
+    // ID로 사용자 정보 반환
+    override fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO {
+        val user = userApiRepository.findById(userId).orElseThrow { EntityNotFoundException("User not found") }
+        val courses = courseQueryService.getCourseList(userId, pageable, true)
+
+        println("courses : ${courses.content}")
+
+
+        return UserProfileWithCoursesDTO(
+            profileImage = user.profileImageUrl,
+            nickname = user.nickname,
+            followers = emptyList(),
+            following = emptyList(),
+            accountPrivate = user.accountPrivate,
+            courses = courses
+        )
     }
 
     // 사용자 정보 업데이트
@@ -73,6 +99,7 @@ class UserApiServiceImpl(
                 updatedUser.role = "ROLE_USER"
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
+                updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
                 userApiRepository.save(updatedUser)
                 return 1
             } else {
@@ -86,7 +113,7 @@ class UserApiServiceImpl(
                 return 2
             }
         } else {
-            throw Exception("User not found")
+            throw EntityNotFoundException("사용자를 찾을 수 없습니다.")
         }
     }
 
@@ -137,6 +164,30 @@ class UserApiServiceImpl(
             userApiRepository.save(updatedUser)
         } else {
             throw Exception("User not found")
+        }
+    }
+
+    // 팔로워 목록 조회
+    override fun getFollowerList(token: String): List<String> {
+        val id = jwtUtil.extractUsername(token)
+        val user: Optional<User> = userApiRepository.findById(id)
+        if (user.isPresent) {
+            val userInfo = user.get()
+            return userInfo.follow.followers
+        } else {
+            throw EntityNotFoundException("User not found")
+        }
+    }
+
+    // 팔로잉 목록 조회
+    override fun getFollowingList(token: String): List<String> {
+        val id = jwtUtil.extractUsername(token)
+        val user: Optional<User> = userApiRepository.findById(id)
+        if (user.isPresent) {
+            val userInfo = user.get()
+            return userInfo.follow.following
+        } else {
+            throw EntityNotFoundException("User not found")
         }
     }
 }

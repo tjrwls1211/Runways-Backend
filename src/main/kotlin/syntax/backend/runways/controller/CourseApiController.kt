@@ -31,7 +31,7 @@ class CourseApiController(
         val pageable = PageRequest.of(page, size)
         val jwtToken = token.substring(7)
         val maker = userApiService.getUserDataFromToken(jwtToken)
-        val courses = courseApiService.getCourseList(maker, pageable)
+        val courses = courseApiService.getMyCourseList(maker, pageable)
 
         val pagedResponse = PagedResponse(
             content = courses.content,

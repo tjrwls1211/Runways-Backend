@@ -3,7 +3,7 @@ package syntax.backend.runways.dto
 import syntax.backend.runways.entity.Follow
 import java.time.LocalDate
 
-data class ResponseUserInfoDTO(
+data class ResponseMyInfoDTO(
     val name: String?,
     val email: String?,
     val platform: String,
@@ -15,4 +15,5 @@ data class ResponseUserInfoDTO(
     val followers: List<String>,
     val following: List<String>,
     val marketing: Boolean,
+    val accountPrivate: Boolean
 )

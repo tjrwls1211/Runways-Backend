@@ -51,4 +51,7 @@ data class User(
 
     @Column(columnDefinition = "TEXT")
     var device : String? = null,
+
+    @Column(columnDefinition = "BOOLEAN")
+    var accountPrivate : Boolean = false,
 )

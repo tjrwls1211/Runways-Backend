@@ -1,5 +1,6 @@
 package syntax.backend.runways.dto
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
 import syntax.backend.runways.entity.User
@@ -13,8 +14,8 @@ data class ResponseCourseDetailDTO (
     val bookmark: Boolean,
     val hits: Hits?,
     val distance: Float,
-    val position: String?,
-    val coordinate: String?,
+    val position: ObjectNode?,
+    val coordinate: ObjectNode?,
     val mapUrl: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
