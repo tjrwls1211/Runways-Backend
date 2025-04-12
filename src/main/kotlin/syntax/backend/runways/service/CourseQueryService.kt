@@ -66,6 +66,7 @@ class CourseQueryService(
             )
         }
     }
+
     private fun removeCrsFieldAsJsonNode(geoJson: String): ObjectNode {
         val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(geoJson) as ObjectNode

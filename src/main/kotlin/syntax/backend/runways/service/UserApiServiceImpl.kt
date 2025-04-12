@@ -2,6 +2,7 @@ package syntax.backend.runways.service
 
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityNotFoundException
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestUserInfoDTO
@@ -63,11 +64,11 @@ class UserApiServiceImpl(
     // ID로 사용자 정보 반환
     override fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO {
         val user = userApiRepository.findById(userId).orElseThrow { EntityNotFoundException("User not found") }
-        val courses = courseQueryService.getCourseList(userId, pageable, true)
-
-        println("courses : ${courses.content}")
-
-
+        val courses = if (user.accountPrivate) {
+            Page.empty(pageable)
+        } else {
+            courseQueryService.getCourseList(userId, pageable, true)
+        }
         return UserProfileWithCoursesDTO(
             profileImage = user.profileImageUrl,
             nickname = user.nickname,
