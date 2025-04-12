@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.NotificationDTO
 import syntax.backend.runways.entity.Notification
+import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.NotificationApiRepository
 import syntax.backend.runways.util.JwtUtil
 import java.util.*
@@ -41,5 +42,17 @@ class NotificationApiServiceImpl(
             return true
         }
         return false
+    }
+
+    override fun addNotification(title:String, content:String, user: User, type:String) {
+        val notification = Notification(
+            title = title,
+            content = content,
+            type = type,
+            read = false,
+            user = user
+
+        )
+        notificationApiRepository.save(notification)
     }
 }

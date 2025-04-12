@@ -11,9 +11,7 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "Locations")
 data class Location(
-
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "ID", updatable = false, nullable = false)
     val id: UUID,
 

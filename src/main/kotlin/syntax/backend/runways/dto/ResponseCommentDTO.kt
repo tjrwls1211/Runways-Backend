@@ -9,5 +9,6 @@ data class ResponseCommentDTO (
     val createdAt : LocalDateTime,
     val updatedAt : LocalDateTime,
     val author : String,
-    val reply : UUID?
+    val parent : UUID?,
+    val childCount : Long,
 )

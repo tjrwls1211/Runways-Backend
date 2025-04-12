@@ -8,7 +8,6 @@ import java.time.LocalDateTime
 @Table(name = "comments")
 data class Comment(
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 
@@ -30,8 +29,8 @@ data class Comment(
     val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @ManyToOne
-    @JoinColumn(name = "reply", referencedColumnName = "id")
-    var reply: Comment? = null,
+    @JoinColumn(name = "parent", referencedColumnName = "id")
+    var parent: Comment? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
