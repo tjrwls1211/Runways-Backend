@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable
 import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
+import syntax.backend.runways.dto.ResponseRecommendCourseDTO
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.User
 import java.util.*
@@ -21,4 +22,5 @@ interface CourseApiService {
     fun getCourseData(courseId: UUID): Course
     fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
     fun increaseHits(courseId: UUID): String
+    fun getRecommendedCourses(token: String, pageable: Pageable): Page<ResponseRecommendCourseDTO>
 }

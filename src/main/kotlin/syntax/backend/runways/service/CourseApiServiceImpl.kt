@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.RequestCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseCourseDetailDTO
+import syntax.backend.runways.dto.ResponseRecommendCourseDTO
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
@@ -331,5 +332,33 @@ class CourseApiServiceImpl(
         println(course.hits)
         courseApiRepository.save(course)
         return "조회수 증가 성공"
+    }
+
+    // TODO : 임시로 데이터 나오게만 함, 추천 코스는 추후에 변경 예정
+    // 추천 코스 리스트
+    override fun getRecommendedCourses(token: String, pageable: Pageable): Page<ResponseRecommendCourseDTO> {
+        val userId = userApiService.getUserDataFromToken(token).id
+        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(userId, listOf(CourseStatus.PUBLIC), pageable)
+        return courseData.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            ResponseRecommendCourseDTO(
+                id = course.id,
+                title = course.title,
+                hits = course.hits,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                tags = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
+
+            )
+        }
     }
 }
