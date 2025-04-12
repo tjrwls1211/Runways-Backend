@@ -9,7 +9,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 @Table(name = "tags")
 data class Tag(
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 

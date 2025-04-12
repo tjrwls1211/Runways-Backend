@@ -11,7 +11,7 @@ import syntax.backend.runways.entity.User
 import java.util.*
 
 interface CourseApiService {
-    fun getCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO>
+    fun getMyCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO>
     fun updateCourse(courseId: UUID, title:String, token: String) : String
     fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO
     fun deleteCourse(courseId: UUID, token: String): String
@@ -23,4 +23,5 @@ interface CourseApiService {
     fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
     fun increaseHits(courseId: UUID): String
     fun getRecommendedCourses(token: String, pageable: Pageable): Page<ResponseRecommendCourseDTO>
+    fun getCourseList(userId:String, pageable: Pageable): Page<ResponseCourseDTO>
 }

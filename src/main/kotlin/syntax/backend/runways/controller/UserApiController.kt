@@ -1,11 +1,13 @@
 package syntax.backend.runways.controller
 
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestUserInfoDTO
-import syntax.backend.runways.dto.ResponseUserInfoDTO
+import syntax.backend.runways.dto.ResponseMyInfoDTO
+import syntax.backend.runways.dto.UserProfileWithCoursesDTO
 import syntax.backend.runways.service.UserApiService
 import syntax.backend.runways.util.JwtUtil
 
@@ -32,10 +34,22 @@ class UserApiController(
 
     // 사용자 정보 호출
     @GetMapping("/info")
-    fun getUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<ResponseUserInfoDTO> {
+    fun getUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<ResponseMyInfoDTO> {
         val jwtToken = token.substring(7)
         val userInfo = userApiService.getUserInfoFromToken(jwtToken)
         return ResponseEntity.ok(userInfo)
+    }
+
+    // 아이디로 사용자 정보 호출
+    @GetMapping("/info/{userId}")
+    fun getUserInfoFromId(@PathVariable userId : String,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int,
+    ): ResponseEntity<UserProfileWithCoursesDTO> {
+        println("userId : $userId")
+        val pageable = PageRequest.of(page, size)
+        val userProfileWithCoursesDTO = userApiService.getUserInfoFromId(userId, pageable)
+        return ResponseEntity.ok(userProfileWithCoursesDTO)
     }
 
     // 닉네임 중복 확인
@@ -84,5 +98,6 @@ class UserApiController(
         userApiService.registerDeviceId(jwtToken, deviceId)
         return ResponseEntity.ok("디바이스 ID 추가 성공")
     }
+
 }
 

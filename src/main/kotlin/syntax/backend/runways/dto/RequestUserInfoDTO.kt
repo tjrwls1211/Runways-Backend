@@ -7,4 +7,5 @@ data class RequestUserInfoDTO (
     val gender: String,
     val nickname: String,
     val marketing: Boolean,
+    val accountPrivate: Boolean,
 )
