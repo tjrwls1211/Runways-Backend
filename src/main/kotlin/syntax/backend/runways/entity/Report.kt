@@ -1,9 +1,6 @@
 package syntax.backend.runways.entity
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import java.util.*
 
 @Entity
@@ -13,8 +10,8 @@ data class Report(
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
     val id: UUID = UUID.randomUUID(),
 
-    @Column(name = "type", nullable = false, length = 20)
-    val type: String,
+    @Enumerated(EnumType.STRING)
+    val type: ReportType,
 
     @Column(name = "detail_id", nullable = false)
     val detailId: String,
