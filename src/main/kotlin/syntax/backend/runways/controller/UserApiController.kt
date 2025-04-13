@@ -35,9 +35,13 @@ class UserApiController(
 
     // 사용자 정보 호출
     @GetMapping("/info")
-    fun getUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<ResponseMyInfoDTO> {
+    fun getUserInfo(@RequestHeader("Authorization") token: String,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int,
+    ): ResponseEntity<ResponseMyInfoDTO> {
+        val pageable = PageRequest.of(page, size)
         val jwtToken = token.substring(7)
-        val userInfo = userApiService.getUserInfoFromToken(jwtToken)
+        val userInfo = userApiService.getUserInfoFromToken(jwtToken, pageable)
         return ResponseEntity.ok(userInfo)
     }
 
@@ -47,7 +51,6 @@ class UserApiController(
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int,
     ): ResponseEntity<UserProfileWithCoursesDTO> {
-        println("userId : $userId")
         val pageable = PageRequest.of(page, size)
         val userProfileWithCoursesDTO = userApiService.getUserInfoFromId(userId, pageable)
         return ResponseEntity.ok(userProfileWithCoursesDTO)
@@ -130,6 +133,15 @@ class UserApiController(
     fun getFollowingList(@RequestParam userId : String): ResponseEntity<List<FollowProfileDTO>> {
         val followingList = userApiService.getFollowingList(userId)
         return ResponseEntity.ok(followingList)
+    }
+
+    // 팔로우 여부 확인
+    @GetMapping("/isfollowing")
+    fun isFollowing(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<Boolean> {
+        val jwtToken = token.substring(7)
+        val senderId = jwtUtil.extractUsername(jwtToken)
+        val isFollowing = userApiService.isFollowing(senderId, receiverId)
+        return ResponseEntity.ok(isFollowing)
     }
 }
 

@@ -21,4 +21,7 @@ data class Follow(
     fun removeFollower(userId: String) {
         followers.remove(userId)
     }
+    fun isFollowing(userId: String): Boolean {
+        return followings.contains(userId)
+    }
 }

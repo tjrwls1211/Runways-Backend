@@ -33,6 +33,7 @@ class CourseApiServiceImpl(
 
     private val geoJsonWriter = GeoJsonWriter()
 
+    // 좌표 추출
     private fun extractCoordinates(position: String): Pair<Double, Double> {
         val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(position)
@@ -42,6 +43,7 @@ class CourseApiServiceImpl(
         return Pair(x, y)
     }
 
+    // CRS 필드 제거
     private fun removeCrsFieldAsJsonNode(geoJson: String): ObjectNode {
         val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(geoJson) as ObjectNode

@@ -33,12 +33,13 @@ class UserApiServiceImpl(
     }
 
     // 토큰으로 사용자 정보 반환
-    override fun getUserInfoFromToken(token: String): ResponseMyInfoDTO {
+    override fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO {
         val id = jwtUtil.extractUsername(token)
         val user: Optional<User> = userApiRepository.findById(id)
         if (user.isPresent) {
             val userInfo = user.get()
             return ResponseMyInfoDTO(
+                userInfo.id,
                 userInfo.name,
                 userInfo.email,
                 userInfo.platform,
@@ -48,7 +49,8 @@ class UserApiServiceImpl(
                 userInfo.nickname,
                 userInfo.follow,
                 userInfo.marketing,
-                userInfo.accountPrivate
+                userInfo.accountPrivate,
+                courseQueryService.getCourseList(id, pageable, false)
                 )
         } else {
             throw EntityNotFoundException("User not found")
@@ -247,5 +249,11 @@ class UserApiServiceImpl(
             receiverUser.follow.removeFollower(senderId)
             userApiRepository.save(receiverUser)
         }
+    }
+
+    // 팔로우 중인지 확인
+    override fun isFollowing(senderId: String, receiverId: String): Boolean {
+        val senderUser = userApiRepository.findById(senderId).orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
+        return senderUser.follow.isFollowing(receiverId)
     }
 }

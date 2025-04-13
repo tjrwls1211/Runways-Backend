@@ -5,12 +5,11 @@ import syntax.backend.runways.dto.FollowProfileDTO
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseMyInfoDTO
 import syntax.backend.runways.dto.UserProfileWithCoursesDTO
-import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
 
 interface UserApiService {
     fun getUserDataFromToken(token: String): User
-    fun getUserInfoFromToken(token: String): ResponseMyInfoDTO
+    fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO
     fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO) : Int
     fun isNicknameDuplicate(nickname: String): Boolean
     fun deleteUser(token: String)
@@ -20,4 +19,5 @@ interface UserApiService {
     fun getFollowerList(userId: String): List<FollowProfileDTO>
     fun getFollowingList(userId: String): List<FollowProfileDTO>
     fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO
+    fun isFollowing(senderId: String, receiverId: String): Boolean
 }
