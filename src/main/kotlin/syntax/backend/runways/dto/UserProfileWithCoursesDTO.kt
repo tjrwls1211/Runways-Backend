@@ -8,5 +8,6 @@ data class UserProfileWithCoursesDTO(
     val nickname: String?,
     val accountPrivate: Boolean?,
     val follow: Follow?,
-    val courses: Page<ResponseCourseDTO>
+    val courses: Page<ResponseCourseDTO>,
+    val isFollow: Boolean
 )

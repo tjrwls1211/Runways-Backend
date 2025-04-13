@@ -46,13 +46,14 @@ class UserApiController(
     }
 
     // 아이디로 사용자 정보 호출
-    @GetMapping("/info/{userId}")
-    fun getUserInfoFromId(@PathVariable userId : String,
+    @GetMapping("/info/{receiverId}")
+    fun getUserInfoFromId(@PathVariable receiverId : String, @RequestHeader("Authorization") token: String,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int,
     ): ResponseEntity<UserProfileWithCoursesDTO> {
+        val senderId = jwtUtil.extractUsername(token.substring(7))
         val pageable = PageRequest.of(page, size)
-        val userProfileWithCoursesDTO = userApiService.getUserInfoFromId(userId, pageable)
+        val userProfileWithCoursesDTO = userApiService.getUserInfoFromId(senderId, receiverId, pageable)
         return ResponseEntity.ok(userProfileWithCoursesDTO)
     }
 
@@ -113,8 +114,8 @@ class UserApiController(
     }
 
     // 팔로우 삭제
-    @DeleteMapping("/follow")
-    fun removeFollower(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<String> {
+    @DeleteMapping("/unfollow/{receiverId}")
+    fun removeFollower(@RequestHeader("Authorization") token: String, @PathVariable receiverId: String): ResponseEntity<String> {
         val jwtToken = token.substring(7)
         val senderId = jwtUtil.extractUsername(jwtToken)
         userApiService.removeFollow(senderId, receiverId)
@@ -133,15 +134,6 @@ class UserApiController(
     fun getFollowingList(@RequestParam userId : String): ResponseEntity<List<FollowProfileDTO>> {
         val followingList = userApiService.getFollowingList(userId)
         return ResponseEntity.ok(followingList)
-    }
-
-    // 팔로우 여부 확인
-    @GetMapping("/isfollowing")
-    fun isFollowing(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<Boolean> {
-        val jwtToken = token.substring(7)
-        val senderId = jwtUtil.extractUsername(jwtToken)
-        val isFollowing = userApiService.isFollowing(senderId, receiverId)
-        return ResponseEntity.ok(isFollowing)
     }
 }
 

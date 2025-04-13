@@ -58,19 +58,21 @@ class UserApiServiceImpl(
     }
 
     // ID로 사용자 정보 반환
-    override fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO {
-        val user = userApiRepository.findById(userId).orElseThrow { EntityNotFoundException("User not found") }
+    override fun getUserInfoFromId(senderId : String, receiverId: String, pageable: Pageable): UserProfileWithCoursesDTO {
+        val user = userApiRepository.findById(receiverId).orElseThrow { EntityNotFoundException("User not found") }
+        val isFollowing = user.follow.isFollower(senderId)
         val courses = if (user.accountPrivate) {
             Page.empty(pageable)
         } else {
-            courseQueryService.getCourseList(userId, pageable, true)
+            courseQueryService.getCourseList(receiverId, pageable, true)
         }
         return UserProfileWithCoursesDTO(
             profileImage = user.profileImageUrl,
             nickname = user.nickname,
             follow = user.follow,
             accountPrivate = user.accountPrivate,
-            courses = courses
+            courses = courses,
+            isFollow = isFollowing,
         )
     }
 
@@ -249,11 +251,5 @@ class UserApiServiceImpl(
             receiverUser.follow.removeFollower(senderId)
             userApiRepository.save(receiverUser)
         }
-    }
-
-    // 팔로우 중인지 확인
-    override fun isFollowing(senderId: String, receiverId: String): Boolean {
-        val senderUser = userApiRepository.findById(senderId).orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
-        return senderUser.follow.isFollowing(receiverId)
     }
 }

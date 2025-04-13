@@ -3,8 +3,9 @@ package syntax.backend.runways.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.persistence.EntityNotFoundException
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
+import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -66,25 +67,22 @@ class CourseApiServiceImpl(
     // 코스 생성
     override fun createCourse(requestCourseDTO: RequestCourseDTO, token: String) {
         val user = userApiService.getUserDataFromToken(token)
-        val geometryFactory = GeometryFactory()
+        val wktReader = WKTReader()
 
-        // Point 변환
-        val positionCoordinates = requestCourseDTO.position.split(",").map { it.toDouble() }
-        val position = geometryFactory.createPoint(Coordinate(positionCoordinates[0], positionCoordinates[1]))
+        // WKT 문자열을 Geometry 객체로 변환
+        val position = wktReader.read(requestCourseDTO.position) // Point
+        val coordinate = wktReader.read(requestCourseDTO.coordinate) // LineString
 
-        // LineString 변환
-        val coordinatePairs = requestCourseDTO.coordinate.split(";").map {
-            val coords = it.split(",").map { coord -> coord.toDouble() }
-            Coordinate(coords[0], coords[1])
-        }.toTypedArray()
-        val coordinate = geometryFactory.createLineString(coordinatePairs)
+        if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
+            throw IllegalArgumentException("Invalid WKT format: position must be Point and coordinate must be LineString")
+        }
 
         val newCourse = Course(
             title = requestCourseDTO.title,
             maker = user,
             distance = requestCourseDTO.distance,
-            position = position,
-            coordinate = coordinate,
+            position = position as Point,
+            coordinate = coordinate as LineString,
             mapUrl = requestCourseDTO.mapUrl
         )
         courseApiRepository.save(newCourse)

@@ -18,6 +18,5 @@ interface UserApiService {
     fun removeFollow(senderId: String, receiverId: String)
     fun getFollowerList(userId: String): List<FollowProfileDTO>
     fun getFollowingList(userId: String): List<FollowProfileDTO>
-    fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO
-    fun isFollowing(senderId: String, receiverId: String): Boolean
+    fun getUserInfoFromId(senderId: String,receiverId: String, pageable: Pageable): UserProfileWithCoursesDTO
 }
