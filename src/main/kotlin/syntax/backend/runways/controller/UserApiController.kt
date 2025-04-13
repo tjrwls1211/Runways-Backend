@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import syntax.backend.runways.dto.FollowProfileDTO
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseMyInfoDTO
 import syntax.backend.runways.dto.UserProfileWithCoursesDTO
@@ -115,6 +116,20 @@ class UserApiController(
         val senderId = jwtUtil.extractUsername(jwtToken)
         userApiService.removeFollow(senderId, receiverId)
         return ResponseEntity.ok("팔로우 삭제 성공")
+    }
+
+    // 팔로워 목록 조회
+    @GetMapping("/follower")
+    fun getFollowerList(@RequestParam userId : String): ResponseEntity<List<FollowProfileDTO>> {
+        val followerList = userApiService.getFollowerList(userId)
+        return ResponseEntity.ok(followerList)
+    }
+
+    // 팔로잉 목록 조회
+    @GetMapping("/following")
+    fun getFollowingList(@RequestParam userId : String): ResponseEntity<List<FollowProfileDTO>> {
+        val followingList = userApiService.getFollowingList(userId)
+        return ResponseEntity.ok(followingList)
     }
 }
 
