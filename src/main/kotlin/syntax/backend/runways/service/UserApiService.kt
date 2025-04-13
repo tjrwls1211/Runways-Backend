@@ -1,9 +1,11 @@
 package syntax.backend.runways.service
 
 import org.springframework.data.domain.Pageable
+import syntax.backend.runways.dto.FollowProfileDTO
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseMyInfoDTO
 import syntax.backend.runways.dto.UserProfileWithCoursesDTO
+import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
 
 interface UserApiService {
@@ -13,7 +15,9 @@ interface UserApiService {
     fun isNicknameDuplicate(nickname: String): Boolean
     fun deleteUser(token: String)
     fun registerDeviceId(token: String, deviceId:String)
-    fun getFollowerList(token: String): List<String>
-    fun getFollowingList(token: String): List<String>
+    fun addFollow(senderId: String, receiverId: String)
+    fun removeFollow(senderId: String, receiverId: String)
+    fun getFollowerList(userId: String): List<FollowProfileDTO>
+    fun getFollowingList(userId: String): List<FollowProfileDTO>
     fun getUserInfoFromId(userId: String, pageable: Pageable): UserProfileWithCoursesDTO
 }

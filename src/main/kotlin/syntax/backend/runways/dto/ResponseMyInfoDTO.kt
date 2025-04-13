@@ -11,9 +11,7 @@ data class ResponseMyInfoDTO(
     val birthDate: LocalDate,
     val gender: String?,
     val nickname: String?,
-    val follow:Follow,
-    val followers: List<String>,
-    val following: List<String>,
+    val follow:Follow?,
     val marketing: Boolean,
     val accountPrivate: Boolean
 )

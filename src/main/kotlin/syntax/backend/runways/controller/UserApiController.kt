@@ -99,5 +99,22 @@ class UserApiController(
         return ResponseEntity.ok("디바이스 ID 추가 성공")
     }
 
+    // 팔로우 추가
+    @PostMapping("/follow")
+    fun addFollower(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val senderId = jwtUtil.extractUsername(jwtToken)
+        userApiService.addFollow(senderId, receiverId)
+        return ResponseEntity.ok("팔로우 추가 성공")
+    }
+
+    // 팔로우 삭제
+    @DeleteMapping("/follow")
+    fun removeFollower(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val senderId = jwtUtil.extractUsername(jwtToken)
+        userApiService.removeFollow(senderId, receiverId)
+        return ResponseEntity.ok("팔로우 삭제 성공")
+    }
 }
 

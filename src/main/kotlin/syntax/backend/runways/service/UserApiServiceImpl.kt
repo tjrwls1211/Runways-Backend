@@ -1,17 +1,13 @@
 package syntax.backend.runways.service
 
-import jakarta.persistence.Entity
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import syntax.backend.runways.dto.RequestUserInfoDTO
-import syntax.backend.runways.dto.ResponseCourseDTO
-import syntax.backend.runways.dto.ResponseMyInfoDTO
-import syntax.backend.runways.dto.UserProfileWithCoursesDTO
+import org.springframework.transaction.annotation.Transactional
+import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
-import syntax.backend.runways.repository.CourseApiRepository
 import syntax.backend.runways.repository.UserApiRepository
 import syntax.backend.runways.util.JwtUtil
 import java.time.LocalDate
@@ -51,8 +47,6 @@ class UserApiServiceImpl(
                 userInfo.gender,
                 userInfo.nickname,
                 userInfo.follow,
-                userInfo.follow.followers,
-                userInfo.follow.following,
                 userInfo.marketing,
                 userInfo.accountPrivate
                 )
@@ -72,8 +66,7 @@ class UserApiServiceImpl(
         return UserProfileWithCoursesDTO(
             profileImage = user.profileImageUrl,
             nickname = user.nickname,
-            followers = emptyList(),
-            following = emptyList(),
+            follow = user.follow,
             accountPrivate = user.accountPrivate,
             courses = courses
         )
@@ -168,27 +161,91 @@ class UserApiServiceImpl(
         }
     }
 
+    // 팔로우 추가
+    @Transactional
+    override fun addFollow(senderId: String, receiverId: String) {
+        // 팔로우 요청을 보낸 사용자 조회
+        val senderUser = userApiRepository.findById(senderId)
+            .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
+
+        // 팔로우 대상 사용자 조회
+        val receiverUser = userApiRepository.findById(receiverId)
+            .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
+
+        // 중복 팔로우 방지
+        if (receiverId in senderUser.follow.followings) {
+            throw IllegalStateException("이미 팔로우한 사용자입니다.")
+        }
+
+        // 팔로잉 추가
+        senderUser.follow.addFollowing(receiverId)
+        userApiRepository.save(senderUser)
+
+        // 팔로워 추가
+        receiverUser.follow.addFollower(senderId)
+        userApiRepository.save(receiverUser)
+    }
+
     // 팔로워 목록 조회
-    override fun getFollowerList(token: String): List<String> {
-        val id = jwtUtil.extractUsername(token)
-        val user: Optional<User> = userApiRepository.findById(id)
+    override fun getFollowerList(userId : String): List<FollowProfileDTO> {
+        val user = userApiRepository.findById(userId)
         if (user.isPresent) {
             val userInfo = user.get()
-            return userInfo.follow.followers
+            val followerIds = userInfo.follow.followers
+            val followers = userApiRepository.findByIdIn(followerIds)
+            return followers.map { follower ->
+                FollowProfileDTO(
+                    id = follower.id,
+                    nickname = follower.nickname,
+                    profileImage = follower.profileImageUrl,
+                )
+            }
         } else {
-            throw EntityNotFoundException("User not found")
+            throw EntityNotFoundException("사용자를 찾을 수 없습니다.")
         }
     }
 
     // 팔로잉 목록 조회
-    override fun getFollowingList(token: String): List<String> {
-        val id = jwtUtil.extractUsername(token)
-        val user: Optional<User> = userApiRepository.findById(id)
+    override fun getFollowingList(userId:String): List<FollowProfileDTO> {
+        val user = userApiRepository.findById(userId)
         if (user.isPresent) {
             val userInfo = user.get()
-            return userInfo.follow.following
+            val followingIds = userInfo.follow.followings
+            val followings = userApiRepository.findByIdIn(followingIds)
+            return followings.map { following ->
+                FollowProfileDTO(
+                    id = following.id,
+                    nickname = following.nickname,
+                    profileImage = following.profileImageUrl,
+                )
+            }
         } else {
-            throw EntityNotFoundException("User not found")
+            throw EntityNotFoundException("사용자를 찾을 수 없습니다.")
+        }
+    }
+
+    @Transactional
+    override fun removeFollow(senderId: String, receiverId: String) {
+        // 팔로우 요청을 보낸 사용자 조회
+        val senderUser = userApiRepository.findById(senderId)
+            .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
+
+        // 팔로우 대상 사용자 조회
+        val receiverUser = userApiRepository.findById(receiverId)
+            .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
+
+        // 팔로잉 목록에서 제거
+        if (receiverId in senderUser.follow.followings) {
+            senderUser.follow.removeFollowing(receiverId)
+            userApiRepository.save(senderUser)
+        } else {
+            throw IllegalStateException("팔로우하지 않은 사용자입니다.")
+        }
+
+        // 팔로워 목록에서 제거
+        if (senderId in receiverUser.follow.followers) {
+            receiverUser.follow.removeFollower(senderId)
+            userApiRepository.save(receiverUser)
         }
     }
 }
