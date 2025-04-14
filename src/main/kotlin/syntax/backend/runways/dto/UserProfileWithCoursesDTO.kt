@@ -1,12 +1,13 @@
 package syntax.backend.runways.dto
 
 import org.springframework.data.domain.Page
+import syntax.backend.runways.entity.Follow
 
 data class UserProfileWithCoursesDTO(
     val profileImage: String?,
     val nickname: String?,
     val accountPrivate: Boolean?,
-    val followers: List<String>,
-    val following: List<String>,
-    val courses: Page<ResponseCourseDTO>
+    val follow: Follow?,
+    val courses: Page<ResponseCourseDTO>,
+    val isFollow: Boolean
 )
