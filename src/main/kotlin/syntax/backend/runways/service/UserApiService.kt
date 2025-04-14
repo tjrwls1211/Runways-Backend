@@ -15,7 +15,8 @@ interface UserApiService {
     fun deleteUser(token: String)
     fun registerDeviceId(token: String, deviceId:String)
     fun addFollow(senderId: String, receiverId: String)
-    fun removeFollow(senderId: String, receiverId: String)
+    fun removeFollowing(senderId: String, receiverId: String)
+    fun removeFollower(senderId: String, receiverId: String)
     fun getFollowerList(userId: String): List<FollowProfileDTO>
     fun getFollowingList(userId: String): List<FollowProfileDTO>
     fun getUserInfoFromId(senderId: String,receiverId: String, pageable: Pageable): UserProfileWithCoursesDTO

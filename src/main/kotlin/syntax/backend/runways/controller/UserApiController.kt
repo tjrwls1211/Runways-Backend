@@ -113,13 +113,22 @@ class UserApiController(
         return ResponseEntity.ok("팔로우 추가 성공")
     }
 
-    // 팔로우 삭제
+    // 팔로우 취소
     @DeleteMapping("/unfollow/{receiverId}")
     fun removeFollower(@RequestHeader("Authorization") token: String, @PathVariable receiverId: String): ResponseEntity<String> {
         val jwtToken = token.substring(7)
         val senderId = jwtUtil.extractUsername(jwtToken)
-        userApiService.removeFollow(senderId, receiverId)
+        userApiService.removeFollowing(senderId, receiverId)
         return ResponseEntity.ok("팔로우 삭제 성공")
+    }
+
+    // 팔로워 삭제
+    @DeleteMapping("/unfollow/follower/{receiverId}")
+    fun removeFollowerBySenderId(@RequestHeader("Authorization") token: String, @PathVariable receiverId: String): ResponseEntity<String> {
+        val jwtToken = token.substring(7)
+        val senderId = jwtUtil.extractUsername(jwtToken)
+        userApiService.removeFollower(senderId, receiverId)
+        return ResponseEntity.ok("팔로워 삭제 성공")
     }
 
     // 팔로워 목록 조회

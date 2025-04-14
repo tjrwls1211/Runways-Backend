@@ -228,8 +228,9 @@ class UserApiServiceImpl(
         }
     }
 
+    // 팔로우 취소
     @Transactional
-    override fun removeFollow(senderId: String, receiverId: String) {
+    override fun removeFollowing(senderId: String, receiverId: String) {
         // 팔로우 요청을 보낸 사용자 조회
         val senderUser = userApiRepository.findById(senderId)
             .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
@@ -250,6 +251,32 @@ class UserApiServiceImpl(
         if (senderId in receiverUser.follow.followers) {
             receiverUser.follow.removeFollower(senderId)
             userApiRepository.save(receiverUser)
+        }
+    }
+
+    // 팔로워 삭제
+    @Transactional
+    override fun removeFollower(senderId: String, receiverId: String) {
+        // 팔로우 요청을 보낸 사용자 조회
+        val senderUser = userApiRepository.findById(senderId)
+            .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
+
+        // 팔로우 대상 사용자 조회
+        val receiverUser = userApiRepository.findById(receiverId)
+            .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
+
+        // 팔로잉 목록에서 제거
+        if (senderId in receiverUser.follow.followings) {
+            receiverUser.follow.removeFollowing(senderId)
+            userApiRepository.save(receiverUser)
+        } else {
+            throw IllegalStateException("팔로우하지 않은 사용자입니다.")
+        }
+
+        // 팔로워 목록에서 제거
+        if (receiverId in senderUser.follow.followers) {
+            senderUser.follow.removeFollower(receiverId)
+            userApiRepository.save(senderUser)
         }
     }
 }
