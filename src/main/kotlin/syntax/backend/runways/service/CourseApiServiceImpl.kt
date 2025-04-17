@@ -39,8 +39,8 @@ class CourseApiServiceImpl(
         val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(position)
         val coordinates = node.get("coordinates")
-        val y = coordinates.get(0).asDouble()
-        val x = coordinates.get(1).asDouble()
+        val x = coordinates.get(0).asDouble()
+        val y = coordinates.get(1).asDouble()
         return Pair(x, y)
     }
 
