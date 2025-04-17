@@ -15,13 +15,57 @@ class WeatherServiceImpl : WeatherService {
     @Value("\${api.key}")
     private lateinit var apiKey: String
 
-    @Value("\${api.weather.url}")
-    private lateinit var apiUrl: String
+    @Value("\${api.forecast.weather.url}")
+    private lateinit var apiForecastUrl: String
+
+    @Value("\${api.now.weather.url}")
+    private lateinit var apiNowUrl: String
 
     private val restTemplate = RestTemplate()
 
-    // 기상청 API 호출
-    override fun getWeather(nx: Double, ny: Double): WeatherDataDTO {
+    override fun getNowWeather(nx: Double, ny: Double): WeatherDataDTO {
+        val now: LocalDateTime = LocalDateTime.now()
+        val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
+        val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+        // 현재 시간 기준 요청
+        var nowHour = now.plusHours(0).withMinute(0).withSecond(0).withNano(0)
+        var formattedTime = nowHour.format(timeFormatter)
+        var formattedDate = nowHour.format(dateFormatter)
+
+        // nx, ny 소수점 버림 후 정수로 변환
+        val nxInt = nx.toInt()
+        val nyInt = ny.toInt()
+
+        // 요청 uri
+        var uri = "$apiNowUrl?serviceKey=$apiKey&numOfRows=1000&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
+
+        println(uri)
+        var response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-", "-")
+        var weatherData = extractNowWeatherData(response)
+
+        // 결측값 확인
+        val isTemperatureInvalid = weatherData.temperature.toDoubleOrNull()?.let { it > 50.0 || it < -50.0 } ?: true
+        val isHumidityInvalid = weatherData.humidity.toIntOrNull()?.let { it > 100 || it < 0 } ?: true
+        val isPrecipitationInvalid = weatherData.precipitation.toDoubleOrNull()?.let { it < 0.0 } ?: true
+        val isWindSpeedInvalid = weatherData.windSpeed.toDoubleOrNull()?.let { it < 0.0 } ?: true
+
+        println("Debug: isTemperatureInvalid=$isTemperatureInvalid, isHumidityInvalid=$isHumidityInvalid, isPrecipitationInvalid=$isPrecipitationInvalid, isWindSpeedInvalid=$isWindSpeedInvalid")
+        if (isTemperatureInvalid || isHumidityInvalid || isPrecipitationInvalid || isWindSpeedInvalid) {
+            nowHour = now.minusHours(1).withMinute(0).withSecond(0).withNano(0)
+            formattedTime = nowHour.format(timeFormatter)
+            formattedDate = nowHour.format(dateFormatter)
+
+            uri = "$apiNowUrl?serviceKey=$apiKey&numOfRows=1000&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
+            response = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-", "-")
+            weatherData = extractNowWeatherData(response)
+        }
+
+        return weatherData
+    }
+
+    // 예보 조회
+    override fun getForecastWeather(nx: Double, ny: Double): WeatherDataDTO {
         val now: LocalDateTime = LocalDateTime.now()
         val nowHour = now.plusHours(0).withMinute(0).withSecond(0).withNano(0)
         val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
@@ -34,7 +78,7 @@ class WeatherServiceImpl : WeatherService {
         val nyInt = ny.toInt()
 
         // 요청 uri
-        var uri = "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
+        var uri = "$apiForecastUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
 
         // 기상청 API 요청
         var response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-","-")
@@ -57,18 +101,18 @@ class WeatherServiceImpl : WeatherService {
                 val beforeHour = now.minusHours(2).withMinute(0).withSecond(0).withNano(0)
                 formattedTime = beforeHour.format(timeFormatter)
             }
-            uri = createUri(formattedDate, formattedTime, nyInt, nxInt)
+            uri = createForecastUri(formattedDate, formattedTime, nyInt, nxInt)
             response = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-","-")
         }
-        return extractWeatherData(response)
+        return extractForecastWeatherData(response)
     }
 
-    private fun createUri(formattedDate: String, formattedTime: String, x: Int, y: Int): String {
-        return "$apiUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$x&ny=$y"
+    private fun createForecastUri(formattedDate: String, formattedTime: String, x: Int, y: Int): String {
+        return "$apiForecastUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$x&ny=$y"
     }
 
-    // 날씨 파싱
-    private fun extractWeatherData(json: String): WeatherDataDTO {
+    // 예보 날씨 파싱
+    private fun extractForecastWeatherData(json: String): WeatherDataDTO {
         val objectMapper = jacksonObjectMapper()
         val rootNode: JsonNode = objectMapper.readTree(json)
 
@@ -104,5 +148,46 @@ class WeatherServiceImpl : WeatherService {
         }
 
         return WeatherDataDTO( temperature, humidity, precipitation, windSpeed, sky )
+    }
+
+    // 단기실황조회 데이터 파싱
+    private fun extractNowWeatherData(json: String): WeatherDataDTO {
+        val objectMapper = jacksonObjectMapper()
+        val rootNode: JsonNode = objectMapper.readTree(json)
+
+        var temperature = "-"
+        var humidity = "-"
+        var precipitation = "-"
+        var windSpeed = "-"
+        var pty = "-" // 강수 형태
+
+        if (rootNode["response"]["header"]["resultCode"].asText() == "00") {
+            val items = rootNode["response"]["body"]["items"]["item"]
+            val weatherData = mutableMapOf<String, String>()
+
+            items.forEach { item ->
+                when (item["category"].asText()) {
+                    "T1H" -> weatherData["temperature"] = item["obsrValue"].asText()
+                    "REH" -> weatherData["humidity"] = item["obsrValue"].asText()
+                    "RN1" -> weatherData["precipitation"] = item["obsrValue"].asText()
+                    "WSD" -> weatherData["windSpeed"] = item["obsrValue"].asText()
+                    "PTY" -> weatherData["pty"] = item["obsrValue"].asText()
+                }
+            }
+            temperature = weatherData["temperature"] ?: temperature
+            humidity = weatherData["humidity"] ?: humidity
+            precipitation = weatherData["precipitation"] ?: precipitation
+            windSpeed = weatherData["windSpeed"] ?: windSpeed
+            pty = when (weatherData["pty"]) {
+                "0" -> "맑음"
+                "1" -> "비"
+                "2" -> "비/눈"
+                "3" -> "눈"
+                "4" -> "소나기"
+                else -> "-"
+            }
+        }
+
+        return WeatherDataDTO(temperature, humidity, precipitation, windSpeed, pty)
     }
 }

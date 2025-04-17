@@ -14,7 +14,7 @@ class WeatherApiController(private val weatherService: WeatherService) {
 
     @GetMapping
     fun getWeather(@RequestParam nx: Double, @RequestParam ny: Double): ResponseEntity<WeatherDataDTO> {
-        val weatherData : WeatherDataDTO = weatherService.getWeather(nx, ny)
+        val weatherData : WeatherDataDTO = weatherService.getNowWeather(nx, ny)
         return ResponseEntity.ok(weatherData)
     }
 
