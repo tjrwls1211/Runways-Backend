@@ -8,6 +8,7 @@ import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.WeatherDataDTO
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.pow
 
 @Service
 class WeatherServiceImpl : WeatherService {
@@ -24,6 +25,9 @@ class WeatherServiceImpl : WeatherService {
     private val restTemplate = RestTemplate()
 
     override fun getNowWeather(nx: Double, ny: Double): WeatherDataDTO {
+        // WGS84 좌표를 격자 좌표로 변환
+        val (nyInt, nxInt) = convertWGS84ToGrid(ny, nx) // ny가 위도, nx가 경도
+
         val now: LocalDateTime = LocalDateTime.now()
         val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
         val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
@@ -33,14 +37,9 @@ class WeatherServiceImpl : WeatherService {
         var formattedTime = nowHour.format(timeFormatter)
         var formattedDate = nowHour.format(dateFormatter)
 
-        // nx, ny 소수점 버림 후 정수로 변환
-        val nxInt = nx.toInt()
-        val nyInt = ny.toInt()
-
         // 요청 uri
         var uri = "$apiNowUrl?serviceKey=$apiKey&numOfRows=1000&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
 
-        println(uri)
         var response: String = restTemplate.getForObject(uri, String::class.java) ?: return WeatherDataDTO("-", "-", "-", "-", "-")
         var weatherData = extractNowWeatherData(response)
 
@@ -66,16 +65,15 @@ class WeatherServiceImpl : WeatherService {
 
     // 예보 조회
     override fun getForecastWeather(nx: Double, ny: Double): WeatherDataDTO {
+        // WGS84 좌표를 격자 좌표로 변환
+        val (nyInt, nxInt) = convertWGS84ToGrid(ny, nx) // ny가 위도, nx가 경도
+
         val now: LocalDateTime = LocalDateTime.now()
         val nowHour = now.plusHours(0).withMinute(0).withSecond(0).withNano(0)
         val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
         var formattedTime = nowHour.format(timeFormatter)
         val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
         var formattedDate = nowHour.format(dateFormatter)
-
-        // nx, ny 소수점 버림 후 정수로 변환
-        val nxInt = nx.toInt()
-        val nyInt = ny.toInt()
 
         // 요청 uri
         var uri = "$apiForecastUrl?serviceKey=$apiKey&numOfRows=10&pageNo=1&dataType=JSON&base_date=$formattedDate&base_time=$formattedTime&nx=$nyInt&ny=$nxInt"
@@ -190,4 +188,41 @@ class WeatherServiceImpl : WeatherService {
 
         return WeatherDataDTO(temperature, humidity, precipitation, windSpeed, pty)
     }
+
+    // WGS84 좌표를 기상청 격자 좌표로 변환하는 메서드 추가
+    private fun convertWGS84ToGrid(lat: Double, lng: Double): Pair<Int, Int> {
+        val RE = 6371.00877 // 지구 반경(km)
+        val GRID = 5.0 // 격자 간격(km)
+        val SLAT1 = 30.0 // 투영 위도1(degree)
+        val SLAT2 = 60.0 // 투영 위도2(degree)
+        val OLON = 126.0 // 기준점 경도(degree)
+        val OLAT = 38.0 // 기준점 위도(degree)
+        val XO = 43 // 기준점 X좌표 (GRID)
+        val YO = 136 // 기준점 Y좌표 (GRID)
+
+        val DEGRAD = Math.PI / 180.0
+
+        val re = RE / GRID
+        val slat1 = SLAT1 * DEGRAD
+        val slat2 = SLAT2 * DEGRAD
+        val olon = OLON * DEGRAD
+        val olat = OLAT * DEGRAD
+
+        val sn = kotlin.math.tan(Math.PI * 0.25 + slat2 * 0.5) / kotlin.math.tan(Math.PI * 0.25 + slat1 * 0.5)
+        val snLog = kotlin.math.ln(kotlin.math.cos(slat1) / kotlin.math.cos(slat2)) / kotlin.math.ln(sn)
+        val sf = kotlin.math.tan(Math.PI * 0.25 + slat1 * 0.5).pow(snLog) * kotlin.math.cos(slat1) / snLog
+        val ro = re * sf / kotlin.math.tan(Math.PI * 0.25 + olat * 0.5).pow(snLog)
+
+        val ra = re * sf / kotlin.math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5).pow(snLog)
+        var theta = lng * DEGRAD - olon
+        if (theta > Math.PI) theta -= 2.0 * Math.PI
+        if (theta < -Math.PI) theta += 2.0 * Math.PI
+        theta *= snLog
+
+        val x = (ra * kotlin.math.sin(theta) + XO + 0.5).toInt()
+        val y = (ro - ra * kotlin.math.cos(theta) + YO + 0.5).toInt()
+
+        return Pair(x, y)
+    }
+
 }
