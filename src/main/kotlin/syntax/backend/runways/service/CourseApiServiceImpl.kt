@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.Point
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -192,49 +193,6 @@ class CourseApiServiceImpl(
         return "북마크 추가 성공"
     }
 
-    // 전체 코스 리스트
-    override fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO> {
-        val statuses = CourseStatus.PUBLIC
-        val allCourseData = courseApiRepository.findByStatus(statuses, pageable)
-        val maker = userApiService.getUserDataFromToken(token)
-
-        return allCourseData.map { course ->
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
-
-            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
-            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
-
-            val (x, y) = if (geoJsonPosition != "{}") extractCoordinates(geoJsonPosition) else Pair(0.0, 0.0)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
-            val commentCount = getCommentCount(course.id)
-
-            ResponseCourseDTO(
-                id = course.id,
-                title = course.title,
-                maker = course.maker,
-                bookmark = course.bookmark,
-                hits = course.hits,
-                distance = course.distance,
-                position = positionNode,
-                coordinate = coordinateNode,
-                mapUrl = course.mapUrl,
-                createdAt = course.createdAt,
-                updatedAt = course.updatedAt,
-                author = course.maker.id == maker.id,
-                status = course.status,
-                tag = course.courseTags.map { it.tag.name },
-                sido = sido,
-                sigungu = sigungu,
-                commentCount = commentCount,
-            )
-        }
-    }
-
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
         val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
@@ -250,12 +208,20 @@ class CourseApiServiceImpl(
         return "북마크 삭제 성공"
     }
 
-    // 코스 검색
-    override fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    // 전체 코스 리스트
+    override fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
-        val courseData = courseApiRepository.findByTitleContainingAndStatus(title, statuses, pageable)
+
+        // 코스 ID 조회
+        val courseIdsPage = courseApiRepository.findCourseIdsByStatus(statuses, pageable)
+        val courseIds = courseIdsPage.content
+
+        // 코스 데이터 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
         val maker = userApiService.getUserDataFromToken(token)
-        return courseData.map { course ->
+
+        // ResponseCourseDTO로 매핑
+        val responseCourses = courses.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
@@ -290,6 +256,62 @@ class CourseApiServiceImpl(
                 commentCount = commentCount,
             )
         }
+
+        // 페이징 결과 반환
+        return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
+    }
+
+    // 코스 검색
+    override fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO> {
+        val statuses = CourseStatus.PUBLIC
+
+        // 코스 ID 조회
+        val courseIdsPage = courseApiRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
+        val courseIds = courseIdsPage.content
+
+        // 코스 데이터 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val maker = userApiService.getUserDataFromToken(token)
+
+        // ResponseCourseDTO로 매핑
+        val responseCourses = courses.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
+
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            val commentCount = getCommentCount(course.id)
+
+            ResponseCourseDTO(
+                id = course.id,
+                title = course.title,
+                maker = course.maker,
+                bookmark = course.bookmark,
+                hits = course.hits,
+                distance = course.distance,
+                position = positionNode,
+                coordinate = coordinateNode,
+                mapUrl = course.mapUrl,
+                createdAt = course.createdAt,
+                updatedAt = course.updatedAt,
+                author = course.maker.id == maker.id,
+                status = course.status,
+                tag = course.courseTags.map { it.tag.name },
+                sido = sido,
+                sigungu = sigungu,
+                commentCount = commentCount,
+            )
+        }
+
+        // 페이징 결과 반환
+        return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
 
     // 코스 조회수 증가
@@ -306,8 +328,16 @@ class CourseApiServiceImpl(
     // 추천 코스 리스트
     override fun getRecommendedCourses(token: String, pageable: Pageable): Page<ResponseRecommendCourseDTO> {
         val userId = userApiService.getUserDataFromToken(token).id
-        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(userId, listOf(CourseStatus.PUBLIC), pageable)
-        return courseData.map { course ->
+
+        // 코스 ID 조회 (페이징 적용)
+        val courseIdsPage = courseApiRepository.findCourseIdsByMakerAndStatuses(userId, listOf(CourseStatus.PUBLIC), pageable)
+        val courseIds = courseIdsPage.content
+
+        // 코스 데이터 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+
+        // ResponseRecommendCourseDTO로 매핑
+        val responseCourses = courses.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
 
             val (x, y) = extractCoordinates(geoJsonPosition)
@@ -325,8 +355,10 @@ class CourseApiServiceImpl(
                 tags = course.courseTags.map { it.tag.name },
                 sido = sido,
                 sigungu = sigungu,
-
             )
         }
+
+        // 페이징 결과 반환
+        return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
 }

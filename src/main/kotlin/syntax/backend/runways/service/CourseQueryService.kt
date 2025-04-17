@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
@@ -28,9 +29,16 @@ class CourseQueryService(
             listOf(CourseStatus.PUBLIC, CourseStatus.FILTERED, CourseStatus.PRIVATE)
         }
 
-        val courseData = courseApiRepository.findByMaker_IdAndStatusInWithTags(userId, statuses, pageable)
+        // 코스 ID 조회 (페이징 적용)
+        val courseIdsPage = courseApiRepository.findCourseIdsByMakerAndStatuses(userId, statuses, pageable)
+        val courseIds = courseIdsPage.content
 
-        return courseData.map { course ->
+        // 코스 데이터 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+
+
+        // ResponseCourseDTO로 매핑
+        val responseCourses = courses.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
@@ -65,6 +73,9 @@ class CourseQueryService(
                 commentCount = commentCount
             )
         }
+
+        // 페이징 결과 반환
+        return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
 
     private fun removeCrsFieldAsJsonNode(geoJson: String): ObjectNode {

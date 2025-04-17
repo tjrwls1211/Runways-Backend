@@ -10,15 +10,29 @@ import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
 interface CourseApiRepository : JpaRepository<Course, UUID> {
-    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.maker.id = :makerId AND c.status IN :statuses")
-    fun findByMaker_IdAndStatusInWithTags(@Param("makerId") makerId: String, @Param("statuses") statuses: List<CourseStatus>, pageable: Pageable): Page<Course>
-
     @Query("SELECT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id = :courseId")
     fun findByIdWithTags(@Param("courseId") courseId: UUID): Optional<Course>
 
-    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.status = :status")
-    fun findByStatus(@Param("status") status: CourseStatus, pageable: Pageable): Page<Course>
+    @Query("SELECT c.id FROM Course c WHERE c.status = :status")
+    fun findCourseIdsByStatus(
+        @Param("status") status: CourseStatus,
+        pageable: Pageable
+    ): Page<UUID>
 
-    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.title LIKE %:title% AND c.status = :status")
-    fun findByTitleContainingAndStatus(@Param("title") title: String, @Param("status") status: CourseStatus, pageable: Pageable): Page<Course>
+    @Query("SELECT c.id FROM Course c WHERE c.title LIKE %:title% AND c.status = :status")
+    fun findCourseIdsByTitleContainingAndStatus(
+        @Param("title") title: String,
+        @Param("status") status: CourseStatus,
+        pageable: Pageable
+    ): Page<UUID>
+
+    @Query("SELECT c.id FROM Course c WHERE c.maker.id = :makerId AND c.status IN :statuses")
+    fun findCourseIdsByMakerAndStatuses(
+        @Param("makerId") makerId: String,
+        @Param("statuses") statuses: List<CourseStatus>,
+        pageable: Pageable
+    ): Page<UUID>
+
+    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id IN :ids")
+    fun findCoursesWithTagsByIds(@Param("ids") ids: List<UUID>): List<Course>
 }
