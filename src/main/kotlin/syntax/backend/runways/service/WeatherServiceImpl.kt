@@ -49,7 +49,6 @@ class WeatherServiceImpl : WeatherService {
         val isPrecipitationInvalid = weatherData.precipitation.toDoubleOrNull()?.let { it < 0.0 } ?: true
         val isWindSpeedInvalid = weatherData.windSpeed.toDoubleOrNull()?.let { it < 0.0 } ?: true
 
-        println("Debug: isTemperatureInvalid=$isTemperatureInvalid, isHumidityInvalid=$isHumidityInvalid, isPrecipitationInvalid=$isPrecipitationInvalid, isWindSpeedInvalid=$isWindSpeedInvalid")
         if (isTemperatureInvalid || isHumidityInvalid || isPrecipitationInvalid || isWindSpeedInvalid) {
             nowHour = now.minusHours(1).withMinute(0).withSecond(0).withNano(0)
             formattedTime = nowHour.format(timeFormatter)
