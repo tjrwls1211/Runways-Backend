@@ -1,10 +1,12 @@
 package syntax.backend.runways.service
 
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import syntax.backend.runways.dto.FollowProfileDTO
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseMyInfoDTO
 import syntax.backend.runways.dto.UserProfileWithCoursesDTO
+import syntax.backend.runways.dto.UserRankingDTO
 import syntax.backend.runways.entity.User
 
 interface UserApiService {
@@ -20,4 +22,5 @@ interface UserApiService {
     fun getFollowerList(userId: String): List<FollowProfileDTO>
     fun getFollowingList(userId: String): List<FollowProfileDTO>
     fun getUserInfoFromId(senderId: String,receiverId: String, pageable: Pageable): UserProfileWithCoursesDTO
+    fun getRankingList(pageable: Pageable): Page<UserRankingDTO>
 }

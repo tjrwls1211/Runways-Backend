@@ -32,26 +32,26 @@ class UserApiServiceImpl(
         }
     }
 
-    // 토큰으로 사용자 정보 반환
     override fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO {
         val id = jwtUtil.extractUsername(token)
         val user: Optional<User> = userApiRepository.findById(id)
         if (user.isPresent) {
             val userInfo = user.get()
             return ResponseMyInfoDTO(
-                userInfo.id,
-                userInfo.name,
-                userInfo.email,
-                userInfo.platform,
-                userInfo.profileImageUrl,
-                userInfo.birthdate,
-                userInfo.gender,
-                userInfo.nickname,
-                userInfo.follow,
-                userInfo.marketing,
-                userInfo.accountPrivate,
-                courseQueryService.getCourseList(id, pageable, false)
-                )
+                id = userInfo.id,
+                name = userInfo.name,
+                email = userInfo.email,
+                platform = userInfo.platform,
+                profileImage = userInfo.profileImageUrl,
+                birthDate = userInfo.birthdate,
+                gender = userInfo.gender,
+                nickname = userInfo.nickname,
+                follow = userInfo.follow,
+                marketing = userInfo.marketing,
+                accountPrivate = userInfo.accountPrivate,
+                courses = courseQueryService.getCourseList(id, pageable, false),
+                experience = userInfo.experience * 0.1f,
+            )
         } else {
             throw EntityNotFoundException("User not found")
         }
@@ -73,6 +73,7 @@ class UserApiServiceImpl(
             accountPrivate = user.accountPrivate,
             courses = courses,
             isFollow = isFollowing,
+            experience = user.experience * 0.1f,
         )
     }
 
@@ -277,6 +278,19 @@ class UserApiServiceImpl(
         if (receiverId in senderUser.follow.followers) {
             senderUser.follow.removeFollower(receiverId)
             userApiRepository.save(senderUser)
+        }
+    }
+
+    // 랭킹 조회
+    override fun getRankingList(pageable: Pageable): Page<UserRankingDTO> {
+        val users = userApiRepository.findAllByOrderByExperienceDesc(pageable)
+        return users.map { user ->
+            UserRankingDTO(
+                id = user.id,
+                nickname = if (user.accountPrivate) "비공개" else user.nickname,
+                profileImage = user.profileImageUrl,
+                experience = user.experience * 0.1f
+            )
         }
     }
 }
