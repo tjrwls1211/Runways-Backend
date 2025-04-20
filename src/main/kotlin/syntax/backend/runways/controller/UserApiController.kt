@@ -6,9 +6,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.FollowProfileDTO
+import syntax.backend.runways.dto.PagedResponse
 import syntax.backend.runways.dto.RequestUserInfoDTO
 import syntax.backend.runways.dto.ResponseMyInfoDTO
 import syntax.backend.runways.dto.UserProfileWithCoursesDTO
+import syntax.backend.runways.dto.UserRankingDTO
 import syntax.backend.runways.service.UserApiService
 import syntax.backend.runways.util.JwtUtil
 
@@ -143,6 +145,24 @@ class UserApiController(
     fun getFollowingList(@RequestParam userId : String): ResponseEntity<List<FollowProfileDTO>> {
         val followingList = userApiService.getFollowingList(userId)
         return ResponseEntity.ok(followingList)
+    }
+
+    // 랭킹 조회
+    @GetMapping("/ranking")
+    fun getRankingList(
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int
+    ): ResponseEntity<PagedResponse<UserRankingDTO>> {
+        val pageable = PageRequest.of(page, size)
+        val rankingList = userApiService.getRankingList(pageable)
+        val pagedResponse = PagedResponse(
+            content = rankingList.content,
+            totalPages = rankingList.totalPages,
+            totalElements = rankingList.totalElements,
+            currentPage = rankingList.number,
+            pageSize = rankingList.size
+        )
+        return ResponseEntity.ok(pagedResponse)
     }
 }
 

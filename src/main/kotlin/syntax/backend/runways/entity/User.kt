@@ -51,6 +51,9 @@ data class User(
 
     @Column(columnDefinition = "TEXT")
     var device : String? = null,
+    
+    @Column(columnDefinition = "INTEGER DEFAULT 0")
+    var experience : Int = 0,
 
     @Column(columnDefinition = "BOOLEAN")
     var accountPrivate : Boolean = false,

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
+import syntax.backend.runways.dto.UpdateCommentDTO
 import syntax.backend.runways.service.CommentApiService
 import java.util.UUID
 
@@ -49,9 +50,9 @@ class CommentApiController(
 
     // 댓글 업데이트
     @PatchMapping("/update")
-    fun updateComment(@RequestHeader("Authorization") token: String, @RequestParam commentId: UUID, content: String ): ResponseEntity<String> {
+    fun updateComment(@RequestHeader("Authorization") token: String, @RequestBody updateCommentDTO: UpdateCommentDTO ): ResponseEntity<String> {
         val jwtToken = token.substring(7)
-        val result = commentApiService.updateComment(commentId, content, jwtToken)
+        val result = commentApiService.updateComment(updateCommentDTO, jwtToken)
         return ResponseEntity.ok(result)
     }
 

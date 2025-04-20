@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
+import syntax.backend.runways.dto.UpdateCommentDTO
 import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.User
@@ -38,7 +39,8 @@ class CommentApiServiceImpl (
                     createdAt = comment.createdAt,
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
-                    childCount = childCount
+                    childCount = childCount,
+                    imageUrl = comment.imageUrl
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
@@ -59,7 +61,8 @@ class CommentApiServiceImpl (
                     createdAt = comment.createdAt,
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
-                    childCount = childCount
+                    childCount = childCount,
+                    imageUrl = comment.imageUrl
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
@@ -77,6 +80,7 @@ class CommentApiServiceImpl (
             postId = courseData,
             status = CommentStatus.PUBLIC,
             parent = parent,
+            imageUrl = requestInsertCommentDTO.imageUrl
         )
 
         // 댓글 저장
@@ -106,7 +110,8 @@ class CommentApiServiceImpl (
                 createdAt = newComment.createdAt,
                 updatedAt = newComment.updatedAt,
                 parent = newComment.parent?.id,
-                childCount = 0
+                childCount = 0,
+                imageUrl = newComment.imageUrl
             )
         }
 
@@ -121,13 +126,14 @@ class CommentApiServiceImpl (
             createdAt = newComment.createdAt,
             updatedAt = newComment.updatedAt,
             parent = newComment.parent?.id,
-            childCount = 0
+            childCount = 0,
+            imageUrl = newComment.imageUrl
         )
     }
 
     // 댓글 업데이트
-    override fun updateComment(commentId: UUID, content: String, token: String): String {
-        val commentData = commentApiRepository.findById(commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
+    override fun updateComment(updateCommentDTO: UpdateCommentDTO, token: String): String {
+        val commentData = commentApiRepository.findById(updateCommentDTO.commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
         val user = userApiService.getUserDataFromToken(token)
 
         if (commentData.author.id != user.id) {
@@ -135,7 +141,10 @@ class CommentApiServiceImpl (
         }
 
         // 새로운 객체 생성 후 저장
-        val updatedCourse = commentData.copy(content = content)
+        val updatedCourse = commentData.copy(
+            content = updateCommentDTO.content,
+            imageUrl = updateCommentDTO.imageUrl
+        )
         commentApiRepository.save(updatedCourse)
 
         return "댓글 업데이트 성공"

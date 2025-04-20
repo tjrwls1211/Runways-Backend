@@ -18,6 +18,9 @@ data class Comment(
     @Column(name = "content", nullable = false, columnDefinition = "text")
     val content: String,
 
+    @Column(name = "imageUrl", columnDefinition = "text")
+    val imageUrl: String? = null,
+
     @ManyToOne
     @JoinColumn(name="author", referencedColumnName = "id")
     val author: User,
