@@ -38,7 +38,8 @@ class CommentApiServiceImpl (
                     createdAt = comment.createdAt,
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
-                    childCount = childCount
+                    childCount = childCount,
+                    imageUrl = comment.imageUrl
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
@@ -59,7 +60,8 @@ class CommentApiServiceImpl (
                     createdAt = comment.createdAt,
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
-                    childCount = childCount
+                    childCount = childCount,
+                    imageUrl = comment.imageUrl
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
@@ -77,6 +79,7 @@ class CommentApiServiceImpl (
             postId = courseData,
             status = CommentStatus.PUBLIC,
             parent = parent,
+            imageUrl = requestInsertCommentDTO.imageUrl
         )
 
         // 댓글 저장
@@ -106,7 +109,8 @@ class CommentApiServiceImpl (
                 createdAt = newComment.createdAt,
                 updatedAt = newComment.updatedAt,
                 parent = newComment.parent?.id,
-                childCount = 0
+                childCount = 0,
+                imageUrl = newComment.imageUrl
             )
         }
 
@@ -121,7 +125,8 @@ class CommentApiServiceImpl (
             createdAt = newComment.createdAt,
             updatedAt = newComment.updatedAt,
             parent = newComment.parent?.id,
-            childCount = 0
+            childCount = 0,
+            imageUrl = newComment.imageUrl
         )
     }
 

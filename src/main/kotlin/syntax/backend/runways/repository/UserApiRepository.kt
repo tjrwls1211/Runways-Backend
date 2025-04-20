@@ -11,5 +11,5 @@ import syntax.backend.runways.entity.User
 interface UserApiRepository : JpaRepository<User, String>{
     fun existsByNickname(nickname: String): Boolean
     fun findByIdIn(ids: List<String>): List<User>
-    fun findAllByOrderByExperienceDesc(pageable: Pageable): Page<User>
+    fun findAllByRoleOrderByExperienceDesc(role: String, pageable: Pageable): Page<User>
 }
