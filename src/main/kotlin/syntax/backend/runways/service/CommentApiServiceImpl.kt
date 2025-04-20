@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestInsertCommentDTO
 import syntax.backend.runways.dto.ResponseCommentDTO
+import syntax.backend.runways.dto.UpdateCommentDTO
 import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.User
@@ -131,8 +132,8 @@ class CommentApiServiceImpl (
     }
 
     // 댓글 업데이트
-    override fun updateComment(commentId: UUID, content: String, token: String): String {
-        val commentData = commentApiRepository.findById(commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
+    override fun updateComment(updateCommentDTO: UpdateCommentDTO, token: String): String {
+        val commentData = commentApiRepository.findById(updateCommentDTO.commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
         val user = userApiService.getUserDataFromToken(token)
 
         if (commentData.author.id != user.id) {
@@ -140,7 +141,10 @@ class CommentApiServiceImpl (
         }
 
         // 새로운 객체 생성 후 저장
-        val updatedCourse = commentData.copy(content = content)
+        val updatedCourse = commentData.copy(
+            content = updateCommentDTO.content,
+            imageUrl = updateCommentDTO.imageUrl
+        )
         commentApiRepository.save(updatedCourse)
 
         return "댓글 업데이트 성공"
