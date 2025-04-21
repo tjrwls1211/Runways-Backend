@@ -283,7 +283,7 @@ class UserApiServiceImpl(
 
     // 랭킹 조회
     override fun getRankingList(pageable: Pageable): Page<UserRankingDTO> {
-        val users = userApiRepository.findAllByRoleOrderByExperienceDesc("ROLE_USER", pageable)
+        val users = userApiRepository.findAllByRoleAndNicknameIsNotNullOrderByExperienceDesc("ROLE_USER", pageable)
         return users.map { user ->
             UserRankingDTO(
                 id = user.id,
