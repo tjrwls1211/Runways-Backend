@@ -11,5 +11,6 @@ data class ResponseCommentDTO (
     val author : String,
     val parent : UUID?,
     val childCount : Long,
-    val imageUrl : String?
+    val imageUrl : String?,
+    val maker : Boolean
 )

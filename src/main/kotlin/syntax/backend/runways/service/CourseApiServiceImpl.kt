@@ -12,16 +12,14 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import syntax.backend.runways.dto.RequestCourseDTO
-import syntax.backend.runways.dto.ResponseCourseDTO
-import syntax.backend.runways.dto.ResponseCourseDetailDTO
-import syntax.backend.runways.dto.ResponseRecommendCourseDTO
+import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
+import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -75,7 +73,7 @@ class CourseApiServiceImpl(
         val coordinate = wktReader.read(requestCourseDTO.coordinate) // LineString
 
         if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
-            throw IllegalArgumentException("Invalid WKT format: position must be Point and coordinate must be LineString")
+            throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
         val newCourse = Course(
@@ -84,7 +82,8 @@ class CourseApiServiceImpl(
             distance = requestCourseDTO.distance,
             position = position as Point,
             coordinate = coordinate as LineString,
-            mapUrl = requestCourseDTO.mapUrl
+            mapUrl = requestCourseDTO.mapUrl,
+            status = requestCourseDTO.status,
         )
         courseApiRepository.save(newCourse)
     }
@@ -100,17 +99,31 @@ class CourseApiServiceImpl(
     }
 
     // 코스 업데이트
-    override fun updateCourse(courseId: UUID, title: String, token: String): String {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+    override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): String {
+        val courseData = courseApiRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         val user = userApiService.getUserDataFromToken(token)
 
         if (courseData.maker.id != user.id) {
             return "코스 제작자가 아닙니다."
         }
 
-        // 새로운 객체 생성 후 저장
-        val updatedCourse = courseData.copy(title = title)
-        courseApiRepository.save(updatedCourse)
+        val wktReader = WKTReader()
+        val position = wktReader.read(requestUpdateCourseDTO.position) // Point
+        val coordinate = wktReader.read(requestUpdateCourseDTO.coordinate) // LineString
+
+        if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
+            throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
+        }
+
+        courseData.title = requestUpdateCourseDTO.title
+        courseData.distance = requestUpdateCourseDTO.distance
+        courseData.position = position as Point
+        courseData.coordinate = coordinate as LineString
+        courseData.mapUrl = requestUpdateCourseDTO.mapUrl
+        courseData.status = requestUpdateCourseDTO.status
+        courseData.updatedAt = LocalDateTime.now()
+
+        courseApiRepository.save(courseData)
 
         return "코스 업데이트 성공"
     }

@@ -25,7 +25,11 @@ class CommentApiServiceImpl (
 ) : CommentApiService {
 
     // 댓글 불러오기(답글 X)
-    override fun getParentCommentList(courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO> {
+    override fun getParentCommentList(courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
+        // 토큰에서 사용자 정보 가져오기
+        val user = userApiService.getUserDataFromToken(token)
+
+        // 댓글 불러오기
         val status = CommentStatus.PUBLIC
         val commentData = commentApiRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         val filteredComments = commentData
@@ -40,14 +44,19 @@ class CommentApiServiceImpl (
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
                     childCount = childCount,
-                    imageUrl = comment.imageUrl
+                    imageUrl = comment.imageUrl,
+                    maker = comment.author.id == user.id
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
     }
 
     // 댓글 불러오기(답글 O)
-    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable): Page<ResponseCommentDTO> {
+    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
+        // 토큰에서 사용자 정보 가져오기
+        val user = userApiService.getUserDataFromToken(token)
+
+        // 답글 불러오기
         val status = CommentStatus.PUBLIC
         val commentData = commentApiRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         val filteredComments = commentData
@@ -62,7 +71,8 @@ class CommentApiServiceImpl (
                     updatedAt = comment.updatedAt,
                     parent = comment.parent?.id,
                     childCount = childCount,
-                    imageUrl = comment.imageUrl
+                    imageUrl = comment.imageUrl,
+                    maker = comment.author.id == user.id
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
@@ -111,7 +121,8 @@ class CommentApiServiceImpl (
                 updatedAt = newComment.updatedAt,
                 parent = newComment.parent?.id,
                 childCount = 0,
-                imageUrl = newComment.imageUrl
+                imageUrl = newComment.imageUrl,
+                maker = true
             )
         }
 
@@ -127,7 +138,8 @@ class CommentApiServiceImpl (
             updatedAt = newComment.updatedAt,
             parent = newComment.parent?.id,
             childCount = 0,
-            imageUrl = newComment.imageUrl
+            imageUrl = newComment.imageUrl,
+            maker = true
         )
     }
 

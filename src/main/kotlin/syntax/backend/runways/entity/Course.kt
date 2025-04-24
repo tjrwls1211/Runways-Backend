@@ -32,22 +32,22 @@ data class Course(
     var hits: Hits = Hits(),
 
     @Column(name = "distance", nullable = false)
-    val distance: Float = 0.0f,
+    var distance: Float = 0.0f,
 
     @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
-    val position: Point = GeometryFactory().createPoint(Coordinate(0.0, 0.0)),
+    var position: Point = GeometryFactory().createPoint(Coordinate(0.0, 0.0)),
 
     @Column(columnDefinition = "geometry(LineString, 4326)", nullable = false)
-    val coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
+    var coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
 
     @Column(name = "mapUrl", columnDefinition = "text")
-    val mapUrl: String,
+    var mapUrl: String,
 
     @Column(name = "createdAt", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updatedAt", nullable = false)
-    val updatedAt: LocalDateTime = LocalDateTime.now(),
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
