@@ -18,25 +18,29 @@ class CommentApiController(
     // 댓글 조회
     @GetMapping("/list")
     fun getCommentList(
+        @RequestHeader("Authorization") token: String,
         @RequestParam courseId: UUID,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
     ): ResponseEntity<Page<ResponseCommentDTO>> {
+        val jwtToken = token.substring(7)
         val pageable = PageRequest.of(page, size)
-        val parentComments = commentApiService.getParentCommentList(courseId, pageable)
+        val parentComments = commentApiService.getParentCommentList(courseId, pageable, jwtToken)
         return ResponseEntity.ok(parentComments)
     }
 
     // 답글 조회
     @GetMapping("/list/{parentId}")
     fun getChildCommentList(
+        @RequestHeader("Authorization") token: String,
         @PathVariable parentId: UUID,
         @RequestParam courseId: UUID,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
     ): ResponseEntity<Page<ResponseCommentDTO>> {
+        val jwtToken = token.substring(7)
         val pageable = PageRequest.of(page, size)
-        val childComments = commentApiService.getChildCommentList(parentId, courseId, pageable)
+        val childComments = commentApiService.getChildCommentList(parentId, courseId, pageable, jwtToken)
         return ResponseEntity.ok(childComments)
     }
 
