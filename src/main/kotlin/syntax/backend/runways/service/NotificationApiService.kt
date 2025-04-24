@@ -10,4 +10,5 @@ interface NotificationApiService {
     fun getNotifications(token: String, pageable: Pageable): Page<NotificationDTO>
     fun markAsRead(notificationId: UUID): Boolean
     fun addNotification(title:String, content:String, user: User, type:String)
+    fun deleteNotification(notificationId: UUID): Boolean
 }

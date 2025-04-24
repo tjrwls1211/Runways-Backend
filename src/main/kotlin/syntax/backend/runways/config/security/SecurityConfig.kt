@@ -21,7 +21,7 @@ class SecurityConfig(private val jwtRequestFilter: JwtRequestFilter, private val
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             // 접근 권한 설정
             .authorizeHttpRequests {
-                it.requestMatchers("/","/api/user/kakao","/api/user/google","/api/user/validate").permitAll()
+                it.requestMatchers("/","/oauth2/**", "/login/**","/api/user/validate").permitAll()
                 it.requestMatchers("/api/user/update").hasAnyRole("ADMIN", "USER","WITHDRAWAL")
                 it.anyRequest().hasAnyRole("ADMIN", "USER")
             }

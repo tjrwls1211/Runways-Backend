@@ -51,4 +51,12 @@ class NotificationApiController(
         val result = expoPushNotificationService.sendPushNotification(notificationRequestDTO.token, notificationRequestDTO.title ,notificationRequestDTO.message)
         return ResponseEntity.ok(result)
     }
+
+    @DeleteMapping("/delete/{notificationId}")
+    fun deleteNotification(@PathVariable notificationId: UUID): ResponseEntity<String> {
+        return if (notificationApiService.deleteNotification(notificationId))
+            ResponseEntity.ok("알림 삭제 성공")
+        else
+            ResponseEntity.notFound().build()
+    }
 }

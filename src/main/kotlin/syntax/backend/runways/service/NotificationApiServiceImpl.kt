@@ -55,4 +55,14 @@ class NotificationApiServiceImpl(
         )
         notificationApiRepository.save(notification)
     }
+
+    override fun deleteNotification(notificationId: UUID): Boolean {
+        val notification = notificationApiRepository.findById(notificationId)
+        if (notification.isPresent) {
+            notificationApiRepository.delete(notification.get())
+            return true
+        } else {
+            return false
+        }
+    }
 }
