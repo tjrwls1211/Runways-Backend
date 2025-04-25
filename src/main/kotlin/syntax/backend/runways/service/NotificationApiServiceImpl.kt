@@ -17,6 +17,7 @@ class NotificationApiServiceImpl(
     private val notificationApiRepository: NotificationApiRepository
 ) : NotificationApiService {
 
+    // 알림 불러오기
     override fun getNotifications(token: String, pageable: Pageable): Page<NotificationDTO> {
         val userId = jwtUtil.extractUsername(token)
         val notifications = notificationApiRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
@@ -27,12 +28,14 @@ class NotificationApiServiceImpl(
                 content = notification.content,
                 type = notification.type,
                 read = notification.read,
-                createdAt = notification.createdAt
+                createdAt = notification.createdAt,
+                courseId = notification.courseId,
             )
         }
         return PageImpl(notificationDTOs, pageable, notifications.totalElements)
     }
 
+    // 알림 읽음 처리
     override fun markAsRead(notificationId: UUID): Boolean {
         val notification = notificationApiRepository.findById(notificationId)
         if (notification.isPresent) {
@@ -44,15 +47,27 @@ class NotificationApiServiceImpl(
         return false
     }
 
-    override fun addNotification(title:String, content:String, user: User, type:String) {
+    // 알림 추가
+    override fun addNotification(title:String, content:String, user: User, type:String, courseId: UUID) {
         val notification = Notification(
             title = title,
             content = content,
             type = type,
             read = false,
-            user = user
-
+            user = user,
+            courseId = courseId
         )
         notificationApiRepository.save(notification)
+    }
+
+    // 알림 삭제
+    override fun deleteNotification(notificationId: UUID): Boolean {
+        val notification = notificationApiRepository.findById(notificationId)
+        if (notification.isPresent) {
+            notificationApiRepository.delete(notification.get())
+            return true
+        } else {
+            return false
+        }
     }
 }

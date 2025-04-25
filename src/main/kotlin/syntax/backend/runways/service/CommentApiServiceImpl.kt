@@ -126,7 +126,7 @@ class CommentApiServiceImpl (
             )
         }
 
-        notificationApiService.addNotification(title, message, recipient, type)
+        notificationApiService.addNotification(title, message, recipient, type, courseData.id)
         expoPushNotificationService.sendPushNotification(expoPushToken, title, message)
 
         // 작성한 댓글 반환

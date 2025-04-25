@@ -21,6 +21,8 @@ class UserApiController(
     private val jwtUtil: JwtUtil
 ) {
 
+    /*
+    // Spring Security가 자동으로 생성해서 필요 X
     // 카카오 리디렉트 URL
     @GetMapping("/kakao")
     fun kakaoLogin(response: HttpServletResponse) {
@@ -34,6 +36,7 @@ class UserApiController(
         val googleAuthUrl = "https://dev-solution.live/oauth2/authorization/google"
         response.sendRedirect(googleAuthUrl)
     }
+     */
 
     // 사용자 정보 호출
     @GetMapping("/info")

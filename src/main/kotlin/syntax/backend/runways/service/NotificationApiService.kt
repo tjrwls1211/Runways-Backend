@@ -9,5 +9,6 @@ import java.util.*
 interface NotificationApiService {
     fun getNotifications(token: String, pageable: Pageable): Page<NotificationDTO>
     fun markAsRead(notificationId: UUID): Boolean
-    fun addNotification(title:String, content:String, user: User, type:String)
+    fun addNotification(title:String, content:String, user: User, type:String, courseId: UUID)
+    fun deleteNotification(notificationId: UUID): Boolean
 }

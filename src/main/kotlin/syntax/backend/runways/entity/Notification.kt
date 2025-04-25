@@ -33,4 +33,6 @@ data class Notification (
     @Column(name = "sent_at")
     var sentAt: LocalDateTime? = null,
 
+    @Column(name = "course_id", nullable = true)
+    var courseId: UUID? = null,
 )
