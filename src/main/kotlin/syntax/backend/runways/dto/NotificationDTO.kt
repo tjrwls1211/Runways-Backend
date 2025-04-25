@@ -9,5 +9,6 @@ data class NotificationDTO(
     val content: String,
     val type: String,
     val read: Boolean,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    val courseId: UUID?
 )
