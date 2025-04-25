@@ -2,7 +2,6 @@ package syntax.backend.runways.service
 
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.User
@@ -20,6 +19,6 @@ interface CourseApiService {
     fun getCourseData(courseId: UUID): Course
     fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
     fun increaseHits(courseId: UUID): String
-    fun getRecommendedCourses(token: String, pageable: Pageable): Page<ResponseRecommendCourseDTO>
+    fun getRecentCourses(token: String): ResponseRecommendCourseDTO
     fun getCourseList(userId:String, pageable: Pageable): Page<ResponseCourseDTO>
 }

@@ -130,23 +130,11 @@ class CourseApiController(
 
     @GetMapping("/recommend")
     fun getRecommendedCourses(
-        @RequestHeader("Authorization") token: String,
-        @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<PagedResponse<ResponseRecommendCourseDTO>> {
-        val pageable = PageRequest.of(page, size)
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<ResponseRecommendCourseDTO> {
         val jwtToken = token.substring(7)
-        val courses = courseApiService.getRecommendedCourses(jwtToken, pageable)
-
-        val pagedResponse = PagedResponse(
-            content = courses.content,
-            totalPages = courses.totalPages,
-            totalElements = courses.totalElements,
-            currentPage = courses.number,
-            pageSize = courses.size
-        )
-
-        return ResponseEntity.ok(pagedResponse)
+        val result = courseApiService.getRecentCourses(jwtToken)
+        return ResponseEntity.ok(result)
     }
 
 

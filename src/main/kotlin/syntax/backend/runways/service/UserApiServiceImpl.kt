@@ -85,7 +85,6 @@ class UserApiServiceImpl(
         // 사용자가 존재하면 업데이트
         if (existingUser.isPresent) {
             val updatedUser = existingUser.get()
-            println("Updated User: $updatedUser")
 
             // 탈퇴한지 7일 이내인 경우
             if (updatedUser.role == "ROLE_WITHDRAWAL" && updatedUser.updatedAt > LocalDateTime.now().minusDays(7)) {
@@ -108,6 +107,7 @@ class UserApiServiceImpl(
                 updatedUser.birthdate = requestUserInfoDTO.birthDate
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
+                updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
                 userApiRepository.save(updatedUser)
                 return 2
             }
