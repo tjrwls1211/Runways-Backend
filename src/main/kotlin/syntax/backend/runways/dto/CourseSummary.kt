@@ -1,6 +1,5 @@
 package syntax.backend.runways.dto
 
-import syntax.backend.runways.entity.Hits
 import java.util.*
 
 data class CourseSummary(
@@ -9,7 +8,7 @@ data class CourseSummary(
     val sido : String?,
     val sigungu : String?,
     val distance: Float,
-    val hits: Hits?,
     val mapUrl: String,
     val tags : List<String>,
+    val useCount : Int,
 )

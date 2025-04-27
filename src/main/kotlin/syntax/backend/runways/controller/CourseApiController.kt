@@ -131,10 +131,17 @@ class CourseApiController(
     @GetMapping("/recommend")
     fun getRecommendedCourses(
         @RequestHeader("Authorization") token: String
-    ): ResponseEntity<ResponseRecommendCourseDTO> {
+    ): ResponseEntity<CombinedRecommendCoursesDTO> {
         val jwtToken = token.substring(7)
-        val result = courseApiService.getRecentCourses(jwtToken)
-        return ResponseEntity.ok(result)
+        val recentCourse = courseApiService.getRecentCourses(jwtToken)
+        val popularCourses = courseApiService.getPopularCourses()
+
+        val combinedResponse = CombinedRecommendCoursesDTO(
+            recentCourse = recentCourse,
+            popularCourse = popularCourses
+        )
+
+        return ResponseEntity.ok(combinedResponse)
     }
 
 

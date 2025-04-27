@@ -20,9 +20,13 @@ import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.PopularCourseRepository
 import syntax.backend.runways.repository.RunningLogApiRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.*
+import kotlin.text.get
 
 @Service
 class CourseApiServiceImpl(
@@ -32,6 +36,7 @@ class CourseApiServiceImpl(
     private val commentApiRepository: CommentApiRepository,
     private val courseQueryService: CourseQueryService,
     private val runningLogApiRepository: RunningLogApiRepository,
+    private val popularCourseRepository: PopularCourseRepository,
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -353,7 +358,10 @@ class CourseApiServiceImpl(
 
         // RunningLog에서 코스 ID만 조회
         val runningLogPage = runningLogApiRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
-        val courseIds = runningLogPage.content.map { it.course.id }.distinct() // 중복 제거
+        val courseIdCountMap = runningLogPage.groupingBy { it.course.id }.eachCount() // 코스별 이용 횟수 집계
+
+        // courseIds를 courseIdCountMap 키로 생성
+        val courseIds = courseIdCountMap.keys.toList()
 
         // 코스 정보를 한 번에 조회
         val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
@@ -375,8 +383,8 @@ class CourseApiServiceImpl(
                 mapUrl = course.mapUrl,
                 sido = sido,
                 sigungu = sigungu,
-                hits = course.hits,
                 tags = course.courseTags.map { it.tag.name },
+                useCount = courseIdCountMap[course.id] ?: 0
             )
         }
 
@@ -386,4 +394,56 @@ class CourseApiServiceImpl(
         )
     }
 
+    override fun getPopularCourses(): ResponseRecommendCourseDTO {
+        val now = LocalDateTime.now()
+
+        // 00:00 ~ 04:29 사이인지 확인
+        val isEarlyMorning = now.toLocalTime().isBefore(LocalTime.of(4, 30))
+
+        // 조회할 날짜 설정
+        val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(2) else LocalDate.now().minusDays(1)
+
+        // 스케줄러에서 저장된 인기 코스 조회
+        val popularCourses = popularCourseRepository.findByDate(targetDate) ?: emptyList()
+
+        if (popularCourses.isEmpty()) {
+            throw EntityNotFoundException("${targetDate}의 인기 코스를 찾을 수 없습니다.")
+        }
+
+        // 코스 ID 리스트 추출
+        val courseIds = popularCourses.map { it.courseId }
+
+        // 코스 데이터 한 번에 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courseMap = courses.associateBy { it.id }
+
+        // 코스 정보를 CourseSummary로 매핑
+        val courseSummaries = popularCourses.map { popularCourse ->
+            val course = courseMap[popularCourse.courseId]
+                ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
+
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            CourseSummary(
+                id = course.id,
+                title = course.title,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                sido = sido,
+                sigungu = sigungu,
+                tags = course.courseTags.map { it.tag.name },
+                useCount = popularCourse.useCount
+            )
+        }
+
+        return ResponseRecommendCourseDTO(
+            title = "어제 많이 이용한 코스입니다!",
+            item = courseSummaries
+        )
+    }
 }
