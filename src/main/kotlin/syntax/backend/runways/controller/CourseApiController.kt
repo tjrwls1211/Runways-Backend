@@ -135,10 +135,12 @@ class CourseApiController(
         val jwtToken = token.substring(7)
         val recentCourse = courseApiService.getRecentCourses(jwtToken)
         val popularCourses = courseApiService.getPopularCourses()
+        val risingCourses = courseApiService.getRisingCourse()
 
         val combinedResponse = CombinedRecommendCoursesDTO(
             recentCourse = recentCourse,
-            popularCourse = popularCourses
+            popularCourse = popularCourses,
+            risingCourse = risingCourses
         )
 
         return ResponseEntity.ok(combinedResponse)

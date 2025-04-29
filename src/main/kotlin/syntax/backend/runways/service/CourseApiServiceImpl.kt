@@ -26,7 +26,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.*
-import kotlin.text.get
 
 @Service
 class CourseApiServiceImpl(
@@ -352,7 +351,7 @@ class CourseApiServiceImpl(
     }
 
     // 최근 사용 코스 조회
-    override fun getRecentCourses(token: String): ResponseRecommendCourseDTO {
+    override fun getRecentCourses(token: String): ResponseRecommendCourseDTO? {
         val userId = userApiService.getUserDataFromToken(token).id
         val pageable = PageRequest.of(0, 10)
 
@@ -394,7 +393,8 @@ class CourseApiServiceImpl(
         )
     }
 
-    override fun getPopularCourses(): ResponseRecommendCourseDTO {
+    // 인기 코스 조회
+    override fun getPopularCourses(): ResponseRecommendCourseDTO? {
         val now = LocalDateTime.now()
 
         // 00:00 ~ 04:29 사이인지 확인
@@ -404,10 +404,10 @@ class CourseApiServiceImpl(
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(2) else LocalDate.now().minusDays(1)
 
         // 스케줄러에서 저장된 인기 코스 조회
-        val popularCourses = popularCourseRepository.findByDate(targetDate) ?: emptyList()
+        val popularCourses = popularCourseRepository.findByDate(targetDate)
 
         if (popularCourses.isEmpty()) {
-            throw EntityNotFoundException("${targetDate}의 인기 코스를 찾을 수 없습니다.")
+            return null
         }
 
         // 코스 ID 리스트 추출
@@ -418,31 +418,89 @@ class CourseApiServiceImpl(
         val courseMap = courses.associateBy { it.id }
 
         // 코스 정보를 CourseSummary로 매핑
-        val courseSummaries = popularCourses.map { popularCourse ->
-            val course = courseMap[popularCourse.courseId]
-                ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
+        val courseSummaries = popularCourses
+            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .map { popularCourse ->
+                val course = courseMap[popularCourse.courseId]
+                    ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
 
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-            val (x, y) = extractCoordinates(geoJsonPosition)
+                val geoJsonPosition = geoJsonWriter.write(course.position)
+                val (x, y) = extractCoordinates(geoJsonPosition)
 
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
+                val location = locationApiService.getNearestLocation(x, y)
+                val sido = location?.sido ?: "Unknown"
+                val sigungu = location?.sigungu ?: "Unknown"
 
-            CourseSummary(
-                id = course.id,
-                title = course.title,
-                distance = course.distance,
-                mapUrl = course.mapUrl,
-                sido = sido,
-                sigungu = sigungu,
-                tags = course.courseTags.map { it.tag.name },
-                useCount = popularCourse.useCount
-            )
-        }
+                CourseSummary(
+                    id = course.id,
+                    title = course.title,
+                    distance = course.distance,
+                    mapUrl = course.mapUrl,
+                    sido = sido,
+                    sigungu = sigungu,
+                    tags = course.courseTags.map { it.tag.name },
+                    useCount = popularCourse.useCount
+                )
+            }
 
         return ResponseRecommendCourseDTO(
-            title = "어제 많이 이용한 코스입니다!",
+            title = "어제 많이 이용한 코스에요!",
+            item = courseSummaries
+        )
+    }
+
+    // 급상승 코스 조회
+    override fun getRisingCourse() : ResponseRecommendCourseDTO? {
+        val now = LocalDateTime.now()
+
+        // 00:00 ~ 04:29 사이인지 확인
+        val isEarlyMorning = now.toLocalTime().isBefore(LocalTime.of(4, 30))
+
+        // 조회할 날짜 설정
+        val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
+
+        // 스케줄러에서 저장된 인기 코스 조회
+        val risingCourses = popularCourseRepository.findByDate(targetDate)
+
+        if (risingCourses.isEmpty()) {
+            throw EntityNotFoundException("${targetDate}의 급상승 코스를 찾을 수 없습니다.")
+        }
+
+        // 코스 ID 리스트 추출
+        val courseIds = risingCourses.map { it.courseId }
+
+        // 코스 데이터 한 번에 조회
+        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courseMap = courses.associateBy { it.id }
+
+        // 코스 정보를 CourseSummary로 매핑
+        val courseSummaries = risingCourses
+            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .map { risingCourse ->
+                val course = courseMap[risingCourse.courseId]
+                ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
+
+                val geoJsonPosition = geoJsonWriter.write(course.position)
+                val (x, y) = extractCoordinates(geoJsonPosition)
+
+                val location = locationApiService.getNearestLocation(x, y)
+                val sido = location?.sido ?: "Unknown"
+                val sigungu = location?.sigungu ?: "Unknown"
+
+                CourseSummary(
+                    id = course.id,
+                    title = course.title,
+                    distance = course.distance,
+                    mapUrl = course.mapUrl,
+                    sido = sido,
+                    sigungu = sigungu,
+                    tags = course.courseTags.map { it.tag.name },
+                    useCount = risingCourse.useCount
+                )
+            }
+
+        return ResponseRecommendCourseDTO(
+            title = "오늘 급상승 코스에요!",
             item = courseSummaries
         )
     }

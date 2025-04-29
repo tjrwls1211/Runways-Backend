@@ -7,4 +7,5 @@ import java.util.UUID
 
 interface PopularCourseRepository : JpaRepository<PopularCourse, UUID> {
     fun findByDate(date: LocalDate): List<PopularCourse>
+    fun findByDateAndCourseId(date: LocalDate, courseId: UUID): PopularCourse?
 }

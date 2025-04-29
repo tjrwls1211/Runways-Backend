@@ -19,7 +19,8 @@ interface CourseApiService {
     fun getCourseData(courseId: UUID): Course
     fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
     fun increaseHits(courseId: UUID): String
-    fun getRecentCourses(token: String): ResponseRecommendCourseDTO
+    fun getRecentCourses(token: String): ResponseRecommendCourseDTO?
     fun getCourseList(userId:String, pageable: Pageable): Page<ResponseCourseDTO>
-    fun getPopularCourses(): ResponseRecommendCourseDTO
+    fun getPopularCourses(): ResponseRecommendCourseDTO?
+    fun getRisingCourse() : ResponseRecommendCourseDTO?
 }
