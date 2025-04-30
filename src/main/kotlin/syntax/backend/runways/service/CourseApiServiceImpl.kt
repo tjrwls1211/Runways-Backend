@@ -463,7 +463,7 @@ class CourseApiServiceImpl(
         val risingCourses = popularCourseRepository.findByDate(targetDate)
 
         if (risingCourses.isEmpty()) {
-            throw EntityNotFoundException("${targetDate}의 급상승 코스를 찾을 수 없습니다.")
+            return null
         }
 
         // 코스 ID 리스트 추출
@@ -478,7 +478,7 @@ class CourseApiServiceImpl(
             .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
             .map { risingCourse ->
                 val course = courseMap[risingCourse.courseId]
-                ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
+                    ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
 
                 val geoJsonPosition = geoJsonWriter.write(course.position)
                 val (x, y) = extractCoordinates(geoJsonPosition)
