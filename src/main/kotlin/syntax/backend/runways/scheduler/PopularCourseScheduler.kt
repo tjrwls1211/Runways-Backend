@@ -18,7 +18,7 @@ class PopularCourseScheduler(
     private val popularCourseRepository: PopularCourseRepository
 ) {
 
-    @Scheduled(cron = "0 51 * * * *") // 매 시간마다 실행
+    @Scheduled(cron = "0 0 * * * *") // 매 시간마다 실행
     fun updateRisingCourses() {
         val now = LocalDateTime.now()
 

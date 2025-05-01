@@ -129,21 +129,21 @@ class CourseApiController(
     }
 
     @GetMapping("/recommend")
-    fun getRecommendedCourses(
-        @RequestHeader("Authorization") token: String
-    ): ResponseEntity<CombinedRecommendCoursesDTO> {
+    fun getRecommendedCourses(@RequestHeader("Authorization") token: String ): ResponseEntity<List<ResponseRecommendCourseDTO>> {
         val jwtToken = token.substring(7)
-        val recentCourse = courseApiService.getRecentCourses(jwtToken)
-        val popularCourses = courseApiService.getPopularCourses()
-        val risingCourses = courseApiService.getRisingCourse()
+        val recommendedCourses = courseApiService.getCombinedRecommendCourses(jwtToken)
+        return ResponseEntity.ok(recommendedCourses)
+    }
 
-        val combinedResponse = CombinedRecommendCoursesDTO(
-            recentCourse = recentCourse,
-            popularCourse = popularCourses,
-            risingCourse = risingCourses
-        )
 
-        return ResponseEntity.ok(combinedResponse)
+    @PostMapping("/auto-generate")
+    fun autoGenerateCourse(
+        @RequestHeader("Authorization") token: String,
+        @RequestParam("question") question: String
+    ): ResponseEntity<Map<String, Any>> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.createCourseByLLM(question, jwtToken)
+        return ResponseEntity.ok(result)
     }
 
 

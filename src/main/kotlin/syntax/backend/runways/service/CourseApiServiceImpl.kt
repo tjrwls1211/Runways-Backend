@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
@@ -503,5 +504,50 @@ class CourseApiServiceImpl(
             title = "오늘 급상승 코스에요!",
             item = courseSummaries
         )
+    }
+
+    override fun createCourseByLLM(question: String, token: String): Map<String, Any> {
+        val user = userApiService.getUserDataFromToken(token)
+
+        // LLM 서버 URL
+        val url = "http://127.0.0.1:8000/api/recommend"
+
+        // 요청 데이터 생성
+        val requestData = mapOf(
+            "question" to question,
+            "lon" to 126.9348964, // 사용자 위치 경도 (예시 값)
+            "lat" to 37.5157975,  // 사용자 위치 위도 (예시 값)
+            "weather" to "맑음",   // 날씨 정보 (예시 값)
+            "temperature" to 25,  // 온도 (예시 값)
+            "condition" to "좋음"  // 사용자 컨디션 (예시 값)
+        )
+
+        // RestTemplate 초기화
+        val restTemplate = RestTemplate()
+
+        return try {
+            // LLM 서버로 POST 요청 보내기
+            val response = restTemplate.postForEntity(url, requestData, Map::class.java)
+
+            if (response.statusCode.is2xxSuccessful) {
+                // 응답 데이터 반환
+                response.body as? Map<String, Any>
+                    ?: throw RuntimeException("LLM 서버 응답이 비어 있습니다.")
+            } else {
+                throw RuntimeException("LLM 서버 요청 실패: ${response.statusCode}")
+            }
+        } catch (e: Exception) {
+            throw RuntimeException("LLM 요청 중 오류 발생: ${e.message}", e)
+        }
+    }
+
+    // 추천 코스 리스트
+    override fun getCombinedRecommendCourses(token: String): List<ResponseRecommendCourseDTO> {
+        val recentCourse = getRecentCourses(token)
+        val popularCourse = getPopularCourses()
+        val risingCourse = getRisingCourse()
+
+        // 필요한 코스 데이터를 리스트로 추가
+        return listOfNotNull(recentCourse, popularCourse, risingCourse)
     }
 }
