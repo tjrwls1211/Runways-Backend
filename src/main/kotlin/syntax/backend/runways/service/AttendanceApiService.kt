@@ -1,7 +1,9 @@
 package syntax.backend.runways.service
 
-import syntax.backend.runways.dto.AttendanceRequestDTO
+import syntax.backend.runways.dto.AttendanceDTO
 
 interface AttendanceApiService  {
-    fun checkAttendance(token: String, attendanceRequestDTO: AttendanceRequestDTO): Boolean
+    fun checkAttendance(token: String, attendanceDTO: AttendanceDTO): Boolean
+    fun getAttendance(token: String): AttendanceDTO?
+    fun updateAttendance(token: String, attendanceDTO: AttendanceDTO): Boolean
 }

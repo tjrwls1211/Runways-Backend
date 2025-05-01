@@ -19,7 +19,7 @@ data class Attendance (
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
     val date: LocalDate,
-    val bodyState : String? = null,
-    val feeling : String? = null,
-    val courseTypePreference : String? = null,
+    var bodyState : String? = null,
+    var feeling : String? = null,
+    var courseTypePreference : String? = null,
 )
