@@ -20,8 +20,16 @@ data class Attendance (
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
+
+    @Column(name = "date", nullable = false)
     val date: LocalDate,
+
+    @Column(name = "body_state", nullable = true)
     var bodyState : String? = null,
+
+    @Column(name = "feeling", nullable = true)
     var feeling : String? = null,
+
+    @Column(name = "course_type_preference", nullable = true)
     var courseTypePreference : String? = null,
 )
