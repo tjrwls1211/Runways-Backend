@@ -129,24 +129,21 @@ class CourseApiController(
     }
 
     @GetMapping("/recommend")
-    fun getRecommendedCourses(
-        @RequestHeader("Authorization") token: String,
-        @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<PagedResponse<ResponseRecommendCourseDTO>> {
-        val pageable = PageRequest.of(page, size)
+    fun getRecommendedCourses(@RequestHeader("Authorization") token: String ): ResponseEntity<List<ResponseRecommendCourseDTO>> {
         val jwtToken = token.substring(7)
-        val courses = courseApiService.getRecommendedCourses(jwtToken, pageable)
+        val recommendedCourses = courseApiService.getCombinedRecommendCourses(jwtToken)
+        return ResponseEntity.ok(recommendedCourses)
+    }
 
-        val pagedResponse = PagedResponse(
-            content = courses.content,
-            totalPages = courses.totalPages,
-            totalElements = courses.totalElements,
-            currentPage = courses.number,
-            pageSize = courses.size
-        )
 
-        return ResponseEntity.ok(pagedResponse)
+    @PostMapping("/auto-generate")
+    fun autoGenerateCourse(
+        @RequestHeader("Authorization") token: String,
+        @RequestParam("question") question: String
+    ): ResponseEntity<Map<String, Any>> {
+        val jwtToken = token.substring(7)
+        val result = courseApiService.createCourseByLLM(question, jwtToken)
+        return ResponseEntity.ok(result)
     }
 
 
