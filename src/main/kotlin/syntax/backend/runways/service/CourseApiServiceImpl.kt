@@ -121,6 +121,7 @@ class CourseApiServiceImpl(
     }
 
     // 코스 업데이트
+    @Transactional
     override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): String {
         val courseData =
             courseApiRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
@@ -151,11 +152,11 @@ class CourseApiServiceImpl(
         courseApiRepository.save(courseData)
 
         // 기존 태그와 요청된 태그 비교
-        val existingTags = courseData.courseTags.map { it.tag.id }.toSet()
-        val newTags = requestUpdateCourseDTO.tag.toSet()
+        val existingTags = courseData.courseTags.map { it.tag.id }
+        val newTags = requestUpdateCourseDTO.tag
 
         // 추가해야 할 태그
-        val tagsToAdd = newTags - existingTags
+        val tagsToAdd = newTags.filterNot { it in existingTags }.distinct()
         val courseTagsToAdd = tagsToAdd.map { tagId ->
             val tag = tagApiRepository.findById(tagId).orElseThrow {
                 IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
@@ -165,7 +166,7 @@ class CourseApiServiceImpl(
         courseTagRepository.saveAll(courseTagsToAdd)
 
         // 삭제해야 할 태그
-        val tagsToRemove = existingTags - newTags
+        val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
         courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove)
 
         return "코스 및 태그 업데이트 성공"
