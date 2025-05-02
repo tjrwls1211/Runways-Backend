@@ -24,4 +24,11 @@ class TagApiController (
         return ResponseEntity.ok(tagList)
     }
 
+    // 태그 검색
+    @GetMapping("/search")
+    fun searchTag(@RequestParam tag: String): ResponseEntity<List<String>> {
+        val tagList = tagApiService.searchTag(tag)
+        return ResponseEntity.ok(tagList.map { it.name })
+    }
+
 }
