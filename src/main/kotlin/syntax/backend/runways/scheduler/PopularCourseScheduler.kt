@@ -59,21 +59,21 @@ class PopularCourseScheduler(
 
         // 코스별 PopularCourse 엔티티 업데이트 또는 생성
         courses.forEach { course ->
-            val useCount = courseIdCountMap[course.id] ?: 0
+            val usageCount = courseIdCountMap[course.id] ?: 0
 
             // 기존 데이터 조회
             val existingCourse = popularCourseRepository.findByDateAndCourseId(targetDate, course.id)
 
             if (existingCourse != null) {
                 // 기존 데이터가 있으면 업데이트
-                val updatedCourse = existingCourse.copy(useCount = existingCourse.useCount + useCount)
+                val updatedCourse = existingCourse.copy(usageCount = existingCourse.usageCount + usageCount)
                 popularCourseRepository.save(updatedCourse)
             } else {
                 // 기존 데이터가 없으면 새로 생성
                 val newCourse = PopularCourse(
                     date = targetDate,
                     courseId = course.id,
-                    useCount = useCount
+                    usageCount = usageCount
                 )
                 popularCourseRepository.save(newCourse)
             }

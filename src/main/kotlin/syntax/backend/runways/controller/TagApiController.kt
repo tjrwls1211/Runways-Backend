@@ -2,6 +2,7 @@ package syntax.backend.runways.controller
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.service.TagApiService
 
 @RestController
@@ -29,6 +30,13 @@ class TagApiController (
     fun searchTag(@RequestParam tag: String): ResponseEntity<List<String>> {
         val tagList = tagApiService.searchTag(tag)
         return ResponseEntity.ok(tagList.map { it.name })
+    }
+
+    // 인기 태그 조회
+    @GetMapping("/popular")
+    fun getPopularTags(): ResponseEntity<List<Tag>> {
+        val popularTags = tagApiService.getPopularTags()
+        return ResponseEntity.ok(popularTags)
     }
 
 }

@@ -25,4 +25,9 @@ class TagApiServiceImpl(
         // 대소문자 구분 없이 검색
         return tagApiRepository.findByNameContainingIgnoreCase(tag)
     }
+
+    // 인기 태그 조회
+    override fun getPopularTags(): List<Tag> {
+        return tagApiRepository.findTop10ByOrderByUsageCountDesc()
+    }
 }

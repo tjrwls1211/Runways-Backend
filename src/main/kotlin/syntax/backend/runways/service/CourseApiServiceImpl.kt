@@ -417,7 +417,7 @@ class CourseApiServiceImpl(
                 sido = sido,
                 sigungu = sigungu,
                 tags = course.courseTags.map { it.tag.name },
-                useCount = courseIdCountMap[course.id] ?: 0
+                usageCount = courseIdCountMap[course.id] ?: 0
             )
         }
 
@@ -453,7 +453,7 @@ class CourseApiServiceImpl(
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = popularCourses
-            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .sortedByDescending { it.usageCount } // usageCount 기준 내림차순 정렬
             .map { popularCourse ->
                 val course = courseMap[popularCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
@@ -473,7 +473,7 @@ class CourseApiServiceImpl(
                     sido = sido,
                     sigungu = sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    useCount = popularCourse.useCount
+                    usageCount = popularCourse.usageCount
                 )
             }
 
@@ -509,7 +509,7 @@ class CourseApiServiceImpl(
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = risingCourses
-            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .sortedByDescending { it.usageCount } // usageCount 기준 내림차순 정렬
             .map { risingCourse ->
                 val course = courseMap[risingCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
@@ -529,7 +529,7 @@ class CourseApiServiceImpl(
                     sido = sido,
                     sigungu = sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    useCount = risingCourse.useCount
+                    usageCount = risingCourse.usageCount
                 )
             }
 
