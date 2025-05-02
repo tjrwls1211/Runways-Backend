@@ -14,9 +14,9 @@ class TagApiController (
 
     // 태그 생성
     @PostMapping("/create")
-    fun createTag(@RequestBody tagDTO: TagDTO) : ResponseEntity<String> {
-        tagApiService.addTag(tagDTO.tagName)
-        return ResponseEntity.ok("태그 생성 완료")
+    fun createTag(@RequestBody tagDTO: TagDTO) : ResponseEntity<Tag> {
+        val newTag = tagApiService.addTag(tagDTO.tagName)
+        return ResponseEntity.ok(newTag)
     }
 
     // 태그 리스트 불러오기
@@ -28,9 +28,9 @@ class TagApiController (
 
     // 태그 검색
     @GetMapping("/search")
-    fun searchTag(@RequestParam tag: String): ResponseEntity<List<String>> {
-        val tagList = tagApiService.searchTag(tag)
-        return ResponseEntity.ok(tagList.map { it.name })
+    fun searchTag(@RequestParam tagName : String): ResponseEntity<List<Tag>> {
+        val tagList = tagApiService.searchTag(tagName)
+        return ResponseEntity.ok(tagList)
     }
 
     // 인기 태그 조회

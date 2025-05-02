@@ -3,7 +3,7 @@ package syntax.backend.runways.service
 import syntax.backend.runways.entity.Tag
 
 interface TagApiService {
-    fun addTag(tag: String)
+    fun addTag(tag: String) : Tag
     fun getTag(): List<String>
     fun searchTag(tag: String): List<Tag>
     fun getPopularTags(): List<Tag>

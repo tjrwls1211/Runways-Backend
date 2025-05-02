@@ -10,9 +10,10 @@ class TagApiServiceImpl(
 ) : TagApiService {
 
     // 태그 추가 기능
-    override fun addTag(tag: String){
+    override fun addTag(tag: String) : Tag {
         val newTag = Tag(name = tag)
         tagApiRepository.save(newTag)
+        return newTag
     }
 
     // 태그 전체 조회
