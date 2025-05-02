@@ -31,6 +31,6 @@ class GlobalExceptionHandler {
     @ExceptionHandler(NotAuthorException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleNotAuthorException(e: NotAuthorException): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("작성자가 아닙니다: ${e.message}")
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("생성자가 아닙니다: ${e.message}")
     }
 }

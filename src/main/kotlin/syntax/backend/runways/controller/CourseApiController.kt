@@ -45,7 +45,7 @@ class CourseApiController(
     }
 
     @PatchMapping("/update")
-    fun updateCourse(@RequestHeader("Authorization") token: String, @RequestBody requestUpdateCourseDTO: RequestUpdateCourseDTO): ResponseEntity<String> {
+    fun updateCourse(@RequestHeader("Authorization") token: String, @RequestBody requestUpdateCourseDTO: RequestUpdateCourseDTO): ResponseEntity<UUID> {
         val jwtToken = token.substring(7)
         val result = courseApiService.updateCourse(requestUpdateCourseDTO, jwtToken)
         return ResponseEntity.ok(result)

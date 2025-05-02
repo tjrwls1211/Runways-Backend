@@ -9,7 +9,7 @@ import java.util.*
 
 interface CourseApiService {
     fun getMyCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO>
-    fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token : String) : String
+    fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token : String) : UUID
     fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO
     fun deleteCourse(courseId: UUID, token: String): String
     fun addBookmark(courseId: UUID, token: String): String

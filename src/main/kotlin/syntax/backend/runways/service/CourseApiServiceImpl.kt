@@ -21,6 +21,7 @@ import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.CourseTag
 import syntax.backend.runways.entity.User
+import syntax.backend.runways.exception.NotAuthorException
 import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
 import syntax.backend.runways.repository.CourseTagRepository
@@ -125,7 +126,7 @@ class CourseApiServiceImpl(
 
     // 코스 업데이트
     @Transactional
-    override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): String {
+    override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): UUID {
         val courseData =
             courseApiRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
                 "코스를 찾을 수 없습니다."
@@ -134,7 +135,7 @@ class CourseApiServiceImpl(
 
         // 코스 제작자 확인
         if (courseData.maker.id != user.id) {
-            return "코스 제작자가 아닙니다."
+            throw NotAuthorException("코스 제작자가 아닙니다.")
         }
 
         // WKT 문자열을 Geometry 객체로 변환
@@ -163,7 +164,7 @@ class CourseApiServiceImpl(
         val tagsToAdd = newTags.filterNot { it in existingTags }.distinct()
         val courseTagsToAdd = tagsToAdd.map { tagId ->
             val tag = tagApiRepository.findById(tagId).orElseThrow {
-                IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
+                EntityNotFoundException("태그 ID를 찾을 수 없습니다. : $tagId")
             }
             CourseTag(course = courseData, tag = tag)
         }
@@ -173,7 +174,7 @@ class CourseApiServiceImpl(
         val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
         courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove)
 
-        return "코스 및 태그 업데이트 성공"
+        return courseData.id
     }
 
     // 코스 상세정보
@@ -239,7 +240,7 @@ class CourseApiServiceImpl(
             val course = optCourseData.get()
             val user = userApiService.getUserDataFromToken(token)
             if (course.maker.id != user.id) {
-                return "코스 제작자가 아닙니다."
+                throw NotAuthorException("코스 제작자가 아닙니다.")
             }
             // 코스 상태 변경 -> 삭제 상태
             course.status = CourseStatus.DELETED
