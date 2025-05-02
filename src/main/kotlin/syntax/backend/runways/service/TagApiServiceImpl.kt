@@ -17,5 +17,4 @@ class TagApiServiceImpl(
     override fun getTag(): List<String> {
         return tagApiRepository.findAll().map { it.name }
     }
-
 }

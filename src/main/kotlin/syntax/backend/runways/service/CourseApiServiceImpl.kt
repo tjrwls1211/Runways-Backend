@@ -18,11 +18,14 @@ import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
+import syntax.backend.runways.entity.CourseTag
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CommentApiRepository
 import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.CourseTagRepository
 import syntax.backend.runways.repository.PopularCourseRepository
 import syntax.backend.runways.repository.RunningLogApiRepository
+import syntax.backend.runways.repository.TagApiRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -37,6 +40,8 @@ class CourseApiServiceImpl(
     private val courseQueryService: CourseQueryService,
     private val runningLogApiRepository: RunningLogApiRepository,
     private val popularCourseRepository: PopularCourseRepository,
+    private val courseTagRepository : CourseTagRepository,
+    private val tagApiRepository: TagApiRepository,
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -94,6 +99,15 @@ class CourseApiServiceImpl(
             status = requestCourseDTO.status,
         )
         courseApiRepository.save(newCourse)
+
+        // 태그 ID를 기반으로 CourseTag 생성 및 저장
+        val courseTags = requestCourseDTO.tag.map { tagId ->
+            val tag = tagApiRepository.findById(tagId).orElseThrow {
+                IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
+            }
+            CourseTag(course = newCourse, tag = tag)
+        }
+        courseTagRepository.saveAll(courseTags)
     }
 
     // 마이페이지 코스 리스트
@@ -136,7 +150,25 @@ class CourseApiServiceImpl(
 
         courseApiRepository.save(courseData)
 
-        return "코스 업데이트 성공"
+        // 기존 태그와 요청된 태그 비교
+        val existingTags = courseData.courseTags.map { it.tag.id }.toSet()
+        val newTags = requestUpdateCourseDTO.tag.toSet()
+
+        // 추가해야 할 태그
+        val tagsToAdd = newTags - existingTags
+        val courseTagsToAdd = tagsToAdd.map { tagId ->
+            val tag = tagApiRepository.findById(tagId).orElseThrow {
+                IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
+            }
+            CourseTag(course = courseData, tag = tag)
+        }
+        courseTagRepository.saveAll(courseTagsToAdd)
+
+        // 삭제해야 할 태그
+        val tagsToRemove = existingTags - newTags
+        courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove)
+
+        return "코스 및 태그 업데이트 성공"
     }
 
     // 코스 상세정보
