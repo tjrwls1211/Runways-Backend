@@ -2,6 +2,7 @@ package syntax.backend.runways.controller
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import syntax.backend.runways.dto.TagDTO
 import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.service.TagApiService
 
@@ -11,10 +12,10 @@ class TagApiController (
     private val tagApiService: TagApiService
 ){
 
-    // 태그 생성 (일단 보류)
+    // 태그 생성
     @PostMapping("/create")
-    fun createTag(@RequestBody tagName : String) : ResponseEntity<String> {
-        tagApiService.addTag(tagName)
+    fun createTag(@RequestBody tagDTO: TagDTO) : ResponseEntity<String> {
+        tagApiService.addTag(tagDTO.tagName)
         return ResponseEntity.ok("태그 생성 완료")
     }
 
