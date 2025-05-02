@@ -2,6 +2,7 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import jakarta.persistence.Entity
 import jakarta.persistence.EntityNotFoundException
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
@@ -45,10 +46,11 @@ class CourseApiServiceImpl(
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
+    private val wktReader = WKTReader()
+    private val objectMapper = ObjectMapper()
 
     // 좌표 추출
     private fun extractCoordinates(position: String): Pair<Double, Double> {
-        val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(position)
         val coordinates = node.get("coordinates")
         val x = coordinates.get(0).asDouble()
@@ -66,7 +68,7 @@ class CourseApiServiceImpl(
 
     // 코스 데이터 호출
     override fun getCourseData(courseId: UUID): Course {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw Exception("코스를 찾을 수 없습니다.")
+        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         return courseData
     }
 
@@ -77,9 +79,8 @@ class CourseApiServiceImpl(
     }
 
     // 코스 생성
-    override fun createCourse(requestCourseDTO: RequestCourseDTO, token: String) {
+    override fun createCourse(requestCourseDTO: RequestCourseDTO, token: String) : UUID {
         val user = userApiService.getUserDataFromToken(token)
-        val wktReader = WKTReader()
 
         // WKT 문자열을 Geometry 객체로 변환
         val position = wktReader.read(requestCourseDTO.position) // Point
@@ -108,6 +109,8 @@ class CourseApiServiceImpl(
             CourseTag(course = newCourse, tag = tag)
         }
         courseTagRepository.saveAll(courseTags)
+
+        return newCourse.id
     }
 
     // 마이페이지 코스 리스트
@@ -129,11 +132,12 @@ class CourseApiServiceImpl(
             )
         val user = userApiService.getUserDataFromToken(token)
 
+        // 코스 제작자 확인
         if (courseData.maker.id != user.id) {
             return "코스 제작자가 아닙니다."
         }
 
-        val wktReader = WKTReader()
+        // WKT 문자열을 Geometry 객체로 변환
         val position = wktReader.read(requestUpdateCourseDTO.position) // Point
         val coordinate = wktReader.read(requestUpdateCourseDTO.coordinate) // LineString
 
@@ -177,22 +181,32 @@ class CourseApiServiceImpl(
         val optCourseData = courseApiRepository.findByIdWithTags(courseId)
         val commentCount = getCommentCount(courseId)
 
+        // 코스 데이터가 존재하는지 확인
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
             val user = userApiService.getUserDataFromToken(token)
+
+            // 북마크 여부 확인
             val isBookmarked = course.bookmark.isBookmarked(user.id)
 
+            // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             return ResponseCourseDetailDTO(
                 id = course.id,
@@ -208,13 +222,13 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == user.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,
             )
         } else {
-            throw Exception("코스를 찾을 수 없습니다.")
+            throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         }
     }
 
@@ -227,6 +241,7 @@ class CourseApiServiceImpl(
             if (course.maker.id != user.id) {
                 return "코스 제작자가 아닙니다."
             }
+            // 코스 상태 변경 -> 삭제 상태
             course.status = CourseStatus.DELETED
             courseApiRepository.save(course)
             return "코스 삭제 성공"
@@ -237,8 +252,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, token: String): String {
-        val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -253,8 +267,7 @@ class CourseApiServiceImpl(
 
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
-        val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -284,16 +297,23 @@ class CourseApiServiceImpl(
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             ResponseCourseDTO(
                 id = course.id,
@@ -309,7 +329,7 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == maker.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,
@@ -337,16 +357,23 @@ class CourseApiServiceImpl(
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             ResponseCourseDTO(
                 id = course.id,
@@ -362,7 +389,7 @@ class CourseApiServiceImpl(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == maker.id,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,

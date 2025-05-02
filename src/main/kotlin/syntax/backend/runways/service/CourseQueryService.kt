@@ -53,6 +53,8 @@ class CourseQueryService(
 
             val commentCount = commentApiRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
 
+            val tags = course.courseTags.map { it.tag }
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
@@ -67,7 +69,7 @@ class CourseQueryService(
                 updatedAt = course.updatedAt,
                 author = course.maker.id == userId,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount

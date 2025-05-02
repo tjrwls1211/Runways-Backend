@@ -17,7 +17,7 @@ interface CourseApiService {
     fun removeBookmark(courseId: UUID, token: String): String
     fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO>
     fun getCourseData(courseId: UUID): Course
-    fun createCourse(requestCourseDTO: RequestCourseDTO,token: String)
+    fun createCourse(requestCourseDTO: RequestCourseDTO,token: String) : UUID
     fun increaseHits(courseId: UUID): String
     fun getRecentCourses(token: String): ResponseRecommendCourseDTO?
     fun getCourseList(userId:String, pageable: Pageable): Page<ResponseCourseDTO>

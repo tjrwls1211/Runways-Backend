@@ -16,10 +16,10 @@ class CourseApiController(
 ) {
 
     @PostMapping("/insert")
-    fun createCourse(@RequestHeader("Authorization") token: String, @RequestBody requestCourseDTO: RequestCourseDTO): ResponseEntity<String> {
+    fun createCourse(@RequestHeader("Authorization") token: String, @RequestBody requestCourseDTO: RequestCourseDTO): ResponseEntity<UUID> {
         val jwtToken = token.substring(7)
-        courseApiService.createCourse(requestCourseDTO, jwtToken)
-        return ResponseEntity.ok("코스 생성 성공")
+        val newCourseId = courseApiService.createCourse(requestCourseDTO, jwtToken)
+        return ResponseEntity.ok(newCourseId)
     }
 
     @GetMapping("/list")
