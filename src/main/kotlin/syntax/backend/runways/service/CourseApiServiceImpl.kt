@@ -15,10 +15,12 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
+import syntax.backend.runways.entity.ActionType
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.CourseTag
+import syntax.backend.runways.entity.TagLog
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.exception.NotAuthorException
 import syntax.backend.runways.repository.CommentRepository
@@ -26,6 +28,7 @@ import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.CourseTagRepository
 import syntax.backend.runways.repository.PopularCourseRepository
 import syntax.backend.runways.repository.RunningLogRepository
+import syntax.backend.runways.repository.TagLogRepository
 import syntax.backend.runways.repository.TagRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -43,6 +46,7 @@ class CourseApiServiceImpl(
     private val popularCourseRepository: PopularCourseRepository,
     private val courseTagRepository : CourseTagRepository,
     private val tagRepository: TagRepository,
+    private val tagLogRepository: TagLogRepository,
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -101,14 +105,19 @@ class CourseApiServiceImpl(
         )
         courseRepository.save(newCourse)
 
-        // 태그 ID를 기반으로 CourseTag 생성 및 저장
-        val courseTags = requestCourseDTO.tag.map { tagId ->
-            val tag = tagRepository.findById(tagId).orElseThrow {
-                IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
+        // 태그 ID를 기반으로 CourseTag 및 TagLog 생성
+        val tags = tagRepository.findAllById(requestCourseDTO.tag).map { tag ->
+            tag.apply {
+                usageCount += 1 // 태그 사용 횟수 증가
             }
-            tag.usageCount += 1 // 태그 사용 횟수 증가
-            CourseTag(course = newCourse, tag = tag)
         }
+
+        val courseTags = tags.map { tag -> CourseTag(course = newCourse, tag = tag) }
+        val tagLogs = tags.map { tag -> TagLog(tag = tag, user = user, actionType = ActionType.USED) }
+
+        // 태그, 태그 로그, 코스 태그를 한 번에 저장
+        tagRepository.saveAll(tags)
+        tagLogRepository.saveAll(tagLogs)
         courseTagRepository.saveAll(courseTags)
 
         return newCourse.id
@@ -127,10 +136,8 @@ class CourseApiServiceImpl(
     // 코스 업데이트
     @Transactional
     override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): UUID {
-        val courseData =
-            courseRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
-                "코스를 찾을 수 없습니다."
-            )
+        val courseData = courseRepository.findById(requestUpdateCourseDTO.courseId)
+            .orElseThrow { EntityNotFoundException("코스를 찾을 수 없습니다.") }
         val user = userApiService.getUserDataFromToken(token)
 
         // 코스 제작자 확인
@@ -162,25 +169,24 @@ class CourseApiServiceImpl(
 
         // 추가해야 할 태그
         val tagsToAdd = newTags.filterNot { it in existingTags }.distinct()
-        val courseTagsToAdd = tagsToAdd.map { tagId ->
-            val tag = tagRepository.findById(tagId).orElseThrow {
-                EntityNotFoundException("태그 ID를 찾을 수 없습니다. : $tagId")
-            }
-            tag.usageCount += 1 // 태그 사용 횟수 증가
-            CourseTag(course = courseData, tag = tag)
+        val tagsToAddEntities = tagRepository.findAllById(tagsToAdd).map { tag ->
+            tag.apply { usageCount += 1 } // 태그 사용 횟수 증가
         }
-        courseTagRepository.saveAll(courseTagsToAdd)
+        val courseTagsToAdd = tagsToAddEntities.map { tag -> CourseTag(course = courseData, tag = tag) }
+        val tagLogsToAdd = tagsToAddEntities.map { tag ->
+            TagLog(tag = tag, user = user, actionType = ActionType.USED) // 태그 로그 생성
+        }
+        courseTagRepository.saveAll(courseTagsToAdd) // 코스 태그 저장
+        tagLogRepository.saveAll(tagLogsToAdd) // 태그 로그 저장
+        tagRepository.saveAll(tagsToAddEntities) // 태그 저장
 
         // 삭제해야 할 태그
         val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
-        tagsToRemove.forEach { tagId ->
-            val tag = tagRepository.findById(tagId).orElseThrow {
-                EntityNotFoundException("태그 ID를 찾을 수 없습니다. : $tagId")
-            }
-            tag.usageCount -= 1 // 태그 사용 횟수 감소
-            tagRepository.save(tag) // 태그 업데이트
+        val tagsToRemoveEntities = tagRepository.findAllById(tagsToRemove).map { tag ->
+            tag.apply { usageCount -= 1 } // 태그 사용 횟수 감소
         }
-        courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove)
+        courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove) // 코스 태그 삭제
+        tagRepository.saveAll(tagsToRemoveEntities) // 태그 저장
 
         return courseData.id
     }
