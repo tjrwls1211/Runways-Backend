@@ -9,7 +9,7 @@ import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
-interface CourseApiRepository : JpaRepository<Course, UUID> {
+interface CourseRepository : JpaRepository<Course, UUID> {
     @Query("SELECT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id = :courseId")
     fun findByIdWithTags(@Param("courseId") courseId: UUID): Optional<Course>
 
