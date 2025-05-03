@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.CourseStatus
-import syntax.backend.runways.repository.CommentApiRepository
-import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.CommentRepository
+import syntax.backend.runways.repository.CourseRepository
 
 @Service
 class CourseQueryService(
-    private val courseApiRepository: CourseApiRepository,
+    private val courseRepository: CourseRepository,
     private val locationApiService: LocationApiService,
-    private val commentApiRepository: CommentApiRepository
+    private val commentRepository: CommentRepository
 ) {
     private val geoJsonWriter = GeoJsonWriter()
 
@@ -30,11 +30,11 @@ class CourseQueryService(
         }
 
         // 코스 ID 조회 (페이징 적용)
-        val courseIdsPage = courseApiRepository.findCourseIdsByMakerAndStatuses(userId, statuses, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByMakerAndStatuses(userId, statuses, pageable)
         val courseIds = courseIdsPage.content
 
         // 코스 데이터 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
 
         // ResponseCourseDTO로 매핑
@@ -51,7 +51,7 @@ class CourseQueryService(
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
-            val commentCount = commentApiRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
+            val commentCount = commentRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
 
             val tags = course.courseTags.map { it.tag }
 

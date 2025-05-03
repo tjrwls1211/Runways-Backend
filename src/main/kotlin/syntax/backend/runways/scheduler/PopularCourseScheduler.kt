@@ -3,9 +3,9 @@ package syntax.backend.runways.scheduler
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import syntax.backend.runways.entity.PopularCourse
-import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.PopularCourseRepository
-import syntax.backend.runways.repository.RunningLogApiRepository
+import syntax.backend.runways.repository.RunningLogRepository
 import syntax.backend.runways.entity.CourseStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -13,8 +13,8 @@ import java.time.LocalTime
 
 @Component
 class PopularCourseScheduler(
-    private val runningLogApiRepository: RunningLogApiRepository,
-    private val courseApiRepository: CourseApiRepository,
+    private val runningLogRepository: RunningLogRepository,
+    private val courseRepository: CourseRepository,
     private val popularCourseRepository: PopularCourseRepository
 ) {
 
@@ -32,7 +32,7 @@ class PopularCourseScheduler(
         val startTime = endTime.minusHours(1)
 
         // RunningLog에서 코스별 이용 횟수 집계
-        val runningLogs = runningLogApiRepository.findByEndTimeBetween(startTime, endTime)
+        val runningLogs = runningLogRepository.findByEndTimeBetween(startTime, endTime)
         if (runningLogs.isEmpty()) {
             println("RunningLog 데이터가 없습니다. startTime: $startTime, endTime: $endTime")
             return
@@ -51,7 +51,7 @@ class PopularCourseScheduler(
             return
         }
 
-        val courses = courseApiRepository.findCoursesWithTagsByIdsAndStatus(courseIds, CourseStatus.PUBLIC)
+        val courses = courseRepository.findCoursesWithTagsByIdsAndStatus(courseIds, CourseStatus.PUBLIC)
         if (courses.isEmpty()) {
             println("PUBLIC 상태의 코스가 없습니다. courseIds: $courseIds")
             return

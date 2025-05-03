@@ -3,14 +3,14 @@ package syntax.backend.runways.service
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.AttendanceDTO
 import syntax.backend.runways.entity.Attendance
-import syntax.backend.runways.repository.AttendanceApiRepository
+import syntax.backend.runways.repository.AttendanceRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Service
 class AttendanceApiServiceImpl(
-    private val attendanceApiRepository: AttendanceApiRepository,
+    private val attendanceRepository: AttendanceRepository,
     private val userApiService: UserApiService
 ) : AttendanceApiService {
 
@@ -25,7 +25,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val existingAttendance = attendanceApiRepository.findByUserAndDate(user, targetDate)
+        val existingAttendance = attendanceRepository.findByUserAndDate(user, targetDate)
 
         // 이미 출석체크가 되어 있는 경우
         if (existingAttendance != null) {
@@ -40,7 +40,7 @@ class AttendanceApiServiceImpl(
             courseTypePreference = attendanceDTO.courseTypePreference,
             date = targetDate
         )
-        attendanceApiRepository.save(attendance)
+        attendanceRepository.save(attendance)
         return true
     }
 
@@ -55,7 +55,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val attendance =  attendanceApiRepository.findByUserAndDate(user, targetDate)
+        val attendance =  attendanceRepository.findByUserAndDate(user, targetDate)
 
         if (attendance == null) {
             return null
@@ -81,7 +81,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val existingAttendance = attendanceApiRepository.findByUserAndDate(user, targetDate)
+        val existingAttendance = attendanceRepository.findByUserAndDate(user, targetDate)
 
         // 출석체크가 되어 있지 않은 경우
         if (existingAttendance == null) {
@@ -93,7 +93,7 @@ class AttendanceApiServiceImpl(
         existingAttendance.feeling = attendanceDTO.feeling
         existingAttendance.courseTypePreference = attendanceDTO.courseTypePreference
 
-        attendanceApiRepository.save(existingAttendance)
+        attendanceRepository.save(existingAttendance)
         return true
     }
 }

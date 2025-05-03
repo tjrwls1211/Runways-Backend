@@ -2,7 +2,6 @@ package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import jakarta.persistence.Entity
 import jakarta.persistence.EntityNotFoundException
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
@@ -22,12 +21,12 @@ import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.CourseTag
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.exception.NotAuthorException
-import syntax.backend.runways.repository.CommentApiRepository
-import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.CommentRepository
+import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.CourseTagRepository
 import syntax.backend.runways.repository.PopularCourseRepository
-import syntax.backend.runways.repository.RunningLogApiRepository
-import syntax.backend.runways.repository.TagApiRepository
+import syntax.backend.runways.repository.RunningLogRepository
+import syntax.backend.runways.repository.TagRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -35,15 +34,15 @@ import java.util.*
 
 @Service
 class CourseApiServiceImpl(
-    private val courseApiRepository: CourseApiRepository,
+    private val courseRepository: CourseRepository,
     private val userApiService: UserApiService,
     private val locationApiService: LocationApiService,
-    private val commentApiRepository: CommentApiRepository,
+    private val commentRepository: CommentRepository,
     private val courseQueryService: CourseQueryService,
-    private val runningLogApiRepository: RunningLogApiRepository,
+    private val runningLogRepository: RunningLogRepository,
     private val popularCourseRepository: PopularCourseRepository,
     private val courseTagRepository : CourseTagRepository,
-    private val tagApiRepository: TagApiRepository,
+    private val tagRepository: TagRepository,
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -69,14 +68,14 @@ class CourseApiServiceImpl(
 
     // 코스 데이터 호출
     override fun getCourseData(courseId: UUID): Course {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        val courseData = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         return courseData
     }
 
     // 댓글 개수 호출
     private fun getCommentCount(courseId: UUID): Long {
         val commentStatus = CommentStatus.PUBLIC
-        return commentApiRepository.countByPostId_IdAndStatus(courseId, commentStatus)
+        return commentRepository.countByPostId_IdAndStatus(courseId, commentStatus)
     }
 
     // 코스 생성
@@ -100,13 +99,14 @@ class CourseApiServiceImpl(
             mapUrl = requestCourseDTO.mapUrl,
             status = requestCourseDTO.status,
         )
-        courseApiRepository.save(newCourse)
+        courseRepository.save(newCourse)
 
         // 태그 ID를 기반으로 CourseTag 생성 및 저장
         val courseTags = requestCourseDTO.tag.map { tagId ->
-            val tag = tagApiRepository.findById(tagId).orElseThrow {
+            val tag = tagRepository.findById(tagId).orElseThrow {
                 IllegalArgumentException("태그 ID를 찾을 수 없습니다. : $tagId")
             }
+            tag.usageCount += 1 // 태그 사용 횟수 증가
             CourseTag(course = newCourse, tag = tag)
         }
         courseTagRepository.saveAll(courseTags)
@@ -128,7 +128,7 @@ class CourseApiServiceImpl(
     @Transactional
     override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): UUID {
         val courseData =
-            courseApiRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
+            courseRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
                 "코스를 찾을 수 없습니다."
             )
         val user = userApiService.getUserDataFromToken(token)
@@ -154,7 +154,7 @@ class CourseApiServiceImpl(
         courseData.status = requestUpdateCourseDTO.status
         courseData.updatedAt = LocalDateTime.now()
 
-        courseApiRepository.save(courseData)
+        courseRepository.save(courseData)
 
         // 기존 태그와 요청된 태그 비교
         val existingTags = courseData.courseTags.map { it.tag.id }
@@ -163,15 +163,23 @@ class CourseApiServiceImpl(
         // 추가해야 할 태그
         val tagsToAdd = newTags.filterNot { it in existingTags }.distinct()
         val courseTagsToAdd = tagsToAdd.map { tagId ->
-            val tag = tagApiRepository.findById(tagId).orElseThrow {
+            val tag = tagRepository.findById(tagId).orElseThrow {
                 EntityNotFoundException("태그 ID를 찾을 수 없습니다. : $tagId")
             }
+            tag.usageCount += 1 // 태그 사용 횟수 증가
             CourseTag(course = courseData, tag = tag)
         }
         courseTagRepository.saveAll(courseTagsToAdd)
 
         // 삭제해야 할 태그
         val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
+        tagsToRemove.forEach { tagId ->
+            val tag = tagRepository.findById(tagId).orElseThrow {
+                EntityNotFoundException("태그 ID를 찾을 수 없습니다. : $tagId")
+            }
+            tag.usageCount -= 1 // 태그 사용 횟수 감소
+            tagRepository.save(tag) // 태그 업데이트
+        }
         courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove)
 
         return courseData.id
@@ -179,7 +187,7 @@ class CourseApiServiceImpl(
 
     // 코스 상세정보
     override fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO {
-        val optCourseData = courseApiRepository.findByIdWithTags(courseId)
+        val optCourseData = courseRepository.findByIdWithTags(courseId)
         val commentCount = getCommentCount(courseId)
 
         // 코스 데이터가 존재하는지 확인
@@ -235,7 +243,7 @@ class CourseApiServiceImpl(
 
     // 코스 삭제
     override fun deleteCourse(courseId: UUID, token: String): String {
-        val optCourseData = courseApiRepository.findById(courseId)
+        val optCourseData = courseRepository.findById(courseId)
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
             val user = userApiService.getUserDataFromToken(token)
@@ -244,7 +252,7 @@ class CourseApiServiceImpl(
             }
             // 코스 상태 변경 -> 삭제 상태
             course.status = CourseStatus.DELETED
-            courseApiRepository.save(course)
+            courseRepository.save(course)
             return "코스 삭제 성공"
         } else {
             return "코스를 찾을 수 없습니다."
@@ -253,7 +261,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, token: String): String {
-        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -261,14 +269,14 @@ class CourseApiServiceImpl(
         }
 
         course.bookmark.addBookMark(user.id)
-        courseApiRepository.save(course)
+        courseRepository.save(course)
 
         return "북마크 추가 성공"
     }
 
     // 북마크 삭제
     override fun removeBookmark(courseId: UUID, token: String): String {
-        val course = courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromToken(token)
 
         if (course.maker.id == user.id) {
@@ -276,7 +284,7 @@ class CourseApiServiceImpl(
         }
 
         course.bookmark.removeBookMark(user.id)
-        courseApiRepository.save(course)
+        courseRepository.save(course)
 
         return "북마크 삭제 성공"
     }
@@ -286,11 +294,11 @@ class CourseApiServiceImpl(
         val statuses = CourseStatus.PUBLIC
 
         // 코스 ID 조회
-        val courseIdsPage = courseApiRepository.findCourseIdsByStatus(statuses, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByStatus(statuses, pageable)
         val courseIds = courseIdsPage.content
 
         // 코스 데이터 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val maker = userApiService.getUserDataFromToken(token)
 
         // ResponseCourseDTO로 매핑
@@ -346,11 +354,11 @@ class CourseApiServiceImpl(
         val statuses = CourseStatus.PUBLIC
 
         // 코스 ID 조회
-        val courseIdsPage = courseApiRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
         val courseIds = courseIdsPage.content
 
         // 코스 데이터 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val maker = userApiService.getUserDataFromToken(token)
 
         // ResponseCourseDTO로 매핑
@@ -405,10 +413,10 @@ class CourseApiServiceImpl(
     @Transactional
     override fun increaseHits(courseId: UUID): String {
         val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+            courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         course.hits.increaseHits()
         println(course.hits)
-        courseApiRepository.save(course)
+        courseRepository.save(course)
         return "조회수 증가 성공"
     }
 
@@ -418,14 +426,14 @@ class CourseApiServiceImpl(
         val pageable = PageRequest.of(0, 10)
 
         // RunningLog에서 코스 ID만 조회
-        val runningLogPage = runningLogApiRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
+        val runningLogPage = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
         val courseIdCountMap = runningLogPage.groupingBy { it.course.id }.eachCount() // 코스별 이용 횟수 집계
 
         // courseIds를 courseIdCountMap 키로 생성
         val courseIds = courseIdCountMap.keys.toList()
 
         // 코스 정보를 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = courses.map { course ->
@@ -476,7 +484,7 @@ class CourseApiServiceImpl(
         val courseIds = popularCourses.map { it.courseId }
 
         // 코스 데이터 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val courseMap = courses.associateBy { it.id }
 
         // 코스 정보를 CourseSummary로 매핑
@@ -532,7 +540,7 @@ class CourseApiServiceImpl(
         val courseIds = risingCourses.map { it.courseId }
 
         // 코스 데이터 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val courseMap = courses.associateBy { it.id }
 
         // 코스 정보를 CourseSummary로 매핑

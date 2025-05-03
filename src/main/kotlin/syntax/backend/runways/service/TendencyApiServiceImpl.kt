@@ -3,11 +3,11 @@ package syntax.backend.runways.service
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.TendencyDTO
 import syntax.backend.runways.entity.Tendency
-import syntax.backend.runways.repository.TendencyApiRepository
+import syntax.backend.runways.repository.TendencyRepository
 
 @Service
 class TendencyApiServiceImpl (
-    private val tendencyApiRepository: TendencyApiRepository,
+    private val tendencyRepository: TendencyRepository,
     private val userApiService: UserApiService
 ): TendencyApiService {
 
@@ -16,7 +16,7 @@ class TendencyApiServiceImpl (
         val user = userApiService.getUserDataFromToken(token)
 
         // 이미 성향 데이터가 존재하는 경우
-        val existingTendency = tendencyApiRepository.findByUser(user)
+        val existingTendency = tendencyRepository.findByUser(user)
         if (existingTendency != null) {
             // 성향 데이터 업데이트
             existingTendency.exerciseFrequency = tendencyDTO.exerciseFrequency
@@ -24,7 +24,7 @@ class TendencyApiServiceImpl (
             existingTendency.runningGoal = tendencyDTO.runningGoal
             existingTendency.exerciseDuration = tendencyDTO.exerciseDuration
             existingTendency.sleepDuration = tendencyDTO.sleepDuration
-            tendencyApiRepository.save(existingTendency)
+            tendencyRepository.save(existingTendency)
         } else {
             // 성향 데이터가 존재하지 않는 경우 새로 생성
             val newTendency = Tendency (
@@ -35,14 +35,14 @@ class TendencyApiServiceImpl (
                 exerciseDuration = tendencyDTO.exerciseDuration,
                 sleepDuration = tendencyDTO.sleepDuration
             )
-            tendencyApiRepository.save(newTendency)
+            tendencyRepository.save(newTendency)
         }
     }
 
     // 성향 데이터 확인
     override fun getTendency(token: String): TendencyDTO? {
         val user = userApiService.getUserDataFromToken(token)
-        val tendency = tendencyApiRepository.findByUser(user)
+        val tendency = tendencyRepository.findByUser(user)
 
         return if (tendency != null) {
             TendencyDTO(

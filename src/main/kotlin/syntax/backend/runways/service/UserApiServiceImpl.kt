@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
-import syntax.backend.runways.repository.UserApiRepository
+import syntax.backend.runways.repository.UserRepository
 import syntax.backend.runways.util.JwtUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -16,7 +16,7 @@ import java.util.*
 
 @Service
 class UserApiServiceImpl(
-    private val userApiRepository: UserApiRepository,
+    private val userRepository: UserRepository,
     private val jwtUtil: JwtUtil,
     private val courseQueryService: CourseQueryService
 ) : UserApiService {
@@ -24,7 +24,7 @@ class UserApiServiceImpl(
     // 토큰에서 유저 정보 가져오기
     override fun getUserDataFromToken(token: String): User {
         val id = jwtUtil.extractUsername(token)
-        val user: Optional<User> = userApiRepository.findById(id)
+        val user: Optional<User> = userRepository.findById(id)
         if (user.isPresent) {
             return user.get()
         } else {
@@ -34,7 +34,7 @@ class UserApiServiceImpl(
 
     override fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO {
         val id = jwtUtil.extractUsername(token)
-        val user: Optional<User> = userApiRepository.findById(id)
+        val user: Optional<User> = userRepository.findById(id)
         if (user.isPresent) {
             val userInfo = user.get()
             return ResponseMyInfoDTO(
@@ -59,7 +59,7 @@ class UserApiServiceImpl(
 
     // ID로 사용자 정보 반환
     override fun getUserInfoFromId(senderId : String, receiverId: String, pageable: Pageable): UserProfileWithCoursesDTO {
-        val user = userApiRepository.findById(receiverId).orElseThrow { EntityNotFoundException("User not found") }
+        val user = userRepository.findById(receiverId).orElseThrow { EntityNotFoundException("User not found") }
         val isFollowing = user.follow.isFollower(senderId)
         val courses = if (user.accountPrivate) {
             Page.empty(pageable)
@@ -80,7 +80,7 @@ class UserApiServiceImpl(
     // 사용자 정보 업데이트
     override fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO): Int {
         val id = jwtUtil.extractUsername(token)
-        val existingUser = userApiRepository.findById(id)
+        val existingUser = userRepository.findById(id)
 
         // 사용자가 존재하면 업데이트
         if (existingUser.isPresent) {
@@ -98,7 +98,7 @@ class UserApiServiceImpl(
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
                 updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
-                userApiRepository.save(updatedUser)
+                userRepository.save(updatedUser)
                 return 1
             } else {
                 // 신규 가입자
@@ -108,7 +108,7 @@ class UserApiServiceImpl(
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
                 updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
-                userApiRepository.save(updatedUser)
+                userRepository.save(updatedUser)
                 return 2
             }
         } else {
@@ -118,13 +118,13 @@ class UserApiServiceImpl(
 
     // 닉네임 중복 확인
     override fun isNicknameDuplicate(nickname: String): Boolean {
-        return !userApiRepository.existsByNickname(nickname)
+        return !userRepository.existsByNickname(nickname)
     }
 
     // 사용자 삭제
     override fun deleteUser(token: String) {
         val id = jwtUtil.extractUsername(token)
-        val deleteUser = userApiRepository.findById(id)
+        val deleteUser = userRepository.findById(id)
         if (deleteUser.isPresent) {
             val withdrawalUser = deleteUser.get()
             withdrawalUser.name = null
@@ -139,7 +139,7 @@ class UserApiServiceImpl(
             withdrawalUser.updatedAt = LocalDateTime.now()
             withdrawalUser.marketing = false
             withdrawalUser.device = null
-            userApiRepository.save(withdrawalUser)
+            userRepository.save(withdrawalUser)
         } else {
             throw Exception("User not found")
         }
@@ -148,7 +148,7 @@ class UserApiServiceImpl(
     // 디바이스 ID 업데이트
     override fun registerDeviceId(token: String, deviceId:String) {
         val id = jwtUtil.extractUsername(token)
-        val existingUser = userApiRepository.findById(id)
+        val existingUser = userRepository.findById(id)
 
         var cleanedDeviceId = deviceId
         if (cleanedDeviceId.contains("{") || cleanedDeviceId.contains("}")) {
@@ -160,7 +160,7 @@ class UserApiServiceImpl(
             val updatedUser = existingUser.get()
             updatedUser.updatedAt = LocalDateTime.now()
             updatedUser.device = cleanedDeviceId
-            userApiRepository.save(updatedUser)
+            userRepository.save(updatedUser)
         } else {
             throw Exception("User not found")
         }
@@ -170,11 +170,11 @@ class UserApiServiceImpl(
     @Transactional
     override fun addFollow(senderId: String, receiverId: String) {
         // 팔로우 요청을 보낸 사용자 조회
-        val senderUser = userApiRepository.findById(senderId)
+        val senderUser = userRepository.findById(senderId)
             .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
 
         // 팔로우 대상 사용자 조회
-        val receiverUser = userApiRepository.findById(receiverId)
+        val receiverUser = userRepository.findById(receiverId)
             .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
 
         // 중복 팔로우 방지
@@ -184,20 +184,20 @@ class UserApiServiceImpl(
 
         // 팔로잉 추가
         senderUser.follow.addFollowing(receiverId)
-        userApiRepository.save(senderUser)
+        userRepository.save(senderUser)
 
         // 팔로워 추가
         receiverUser.follow.addFollower(senderId)
-        userApiRepository.save(receiverUser)
+        userRepository.save(receiverUser)
     }
 
     // 팔로워 목록 조회
     override fun getFollowerList(userId : String): List<FollowProfileDTO> {
-        val user = userApiRepository.findById(userId)
+        val user = userRepository.findById(userId)
         if (user.isPresent) {
             val userInfo = user.get()
             val followerIds = userInfo.follow.followers
-            val followers = userApiRepository.findByIdIn(followerIds)
+            val followers = userRepository.findByIdIn(followerIds)
             return followers.map { follower ->
                 FollowProfileDTO(
                     id = follower.id,
@@ -212,11 +212,11 @@ class UserApiServiceImpl(
 
     // 팔로잉 목록 조회
     override fun getFollowingList(userId:String): List<FollowProfileDTO> {
-        val user = userApiRepository.findById(userId)
+        val user = userRepository.findById(userId)
         if (user.isPresent) {
             val userInfo = user.get()
             val followingIds = userInfo.follow.followings
-            val followings = userApiRepository.findByIdIn(followingIds)
+            val followings = userRepository.findByIdIn(followingIds)
             return followings.map { following ->
                 FollowProfileDTO(
                     id = following.id,
@@ -233,17 +233,17 @@ class UserApiServiceImpl(
     @Transactional
     override fun removeFollowing(senderId: String, receiverId: String) {
         // 팔로우 요청을 보낸 사용자 조회
-        val senderUser = userApiRepository.findById(senderId)
+        val senderUser = userRepository.findById(senderId)
             .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
 
         // 팔로우 대상 사용자 조회
-        val receiverUser = userApiRepository.findById(receiverId)
+        val receiverUser = userRepository.findById(receiverId)
             .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
 
         // 팔로잉 목록에서 제거
         if (receiverId in senderUser.follow.followings) {
             senderUser.follow.removeFollowing(receiverId)
-            userApiRepository.save(senderUser)
+            userRepository.save(senderUser)
         } else {
             throw IllegalStateException("팔로우하지 않은 사용자입니다.")
         }
@@ -251,7 +251,7 @@ class UserApiServiceImpl(
         // 팔로워 목록에서 제거
         if (senderId in receiverUser.follow.followers) {
             receiverUser.follow.removeFollower(senderId)
-            userApiRepository.save(receiverUser)
+            userRepository.save(receiverUser)
         }
     }
 
@@ -259,17 +259,17 @@ class UserApiServiceImpl(
     @Transactional
     override fun removeFollower(senderId: String, receiverId: String) {
         // 팔로우 요청을 보낸 사용자 조회
-        val senderUser = userApiRepository.findById(senderId)
+        val senderUser = userRepository.findById(senderId)
             .orElseThrow { EntityNotFoundException("팔로우 요청을 보낸 사용자를 찾을 수 없습니다.") }
 
         // 팔로우 대상 사용자 조회
-        val receiverUser = userApiRepository.findById(receiverId)
+        val receiverUser = userRepository.findById(receiverId)
             .orElseThrow { EntityNotFoundException("팔로우 대상 사용자를 찾을 수 없습니다.") }
 
         // 팔로잉 목록에서 제거
         if (senderId in receiverUser.follow.followings) {
             receiverUser.follow.removeFollowing(senderId)
-            userApiRepository.save(receiverUser)
+            userRepository.save(receiverUser)
         } else {
             throw IllegalStateException("팔로우하지 않은 사용자입니다.")
         }
@@ -277,13 +277,13 @@ class UserApiServiceImpl(
         // 팔로워 목록에서 제거
         if (receiverId in senderUser.follow.followers) {
             senderUser.follow.removeFollower(receiverId)
-            userApiRepository.save(senderUser)
+            userRepository.save(senderUser)
         }
     }
 
     // 랭킹 조회
     override fun getRankingList(pageable: Pageable): Page<UserRankingDTO> {
-        val users = userApiRepository.findAllByRoleAndNicknameIsNotNullOrderByExperienceDesc("ROLE_USER", pageable)
+        val users = userRepository.findAllByRoleAndNicknameIsNotNullOrderByExperienceDesc("ROLE_USER", pageable)
         return users.map { user ->
             UserRankingDTO(
                 id = user.id,

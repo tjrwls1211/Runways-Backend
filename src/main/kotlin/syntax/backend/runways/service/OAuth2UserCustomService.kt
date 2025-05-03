@@ -8,12 +8,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Service
 import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.User
-import syntax.backend.runways.repository.UserApiRepository
+import syntax.backend.runways.repository.UserRepository
 import java.time.LocalDate
 
 @RequiredArgsConstructor
 @Service
-class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) : DefaultOAuth2UserService() {
+class OAuth2UserCustomService(private val userRepository: UserRepository) : DefaultOAuth2UserService() {
 
     override fun loadUser(userRequest: OAuth2UserRequest): OAuth2User {
         val oAuth2User = super.loadUser(userRequest)
@@ -63,7 +63,7 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
     }
 
     fun saveOrUpdateUser(user: User) {
-        val existingUser = userApiRepository.findById(user.id)
+        val existingUser = userRepository.findById(user.id)
         if (existingUser.isPresent) {
             val updatedUser = existingUser.get().apply {
                 name = user.name
@@ -71,9 +71,9 @@ class OAuth2UserCustomService(private val userApiRepository: UserApiRepository) 
                 profileImageUrl = user.profileImageUrl
                 platform = user.platform
             }
-            userApiRepository.save(updatedUser)
+            userRepository.save(updatedUser)
         } else {
-            userApiRepository.save(user)
+            userRepository.save(user)
         }
     }
 }
