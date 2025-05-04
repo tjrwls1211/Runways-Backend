@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.Follow
+import syntax.backend.runways.entity.Role
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.UserRepository
 import syntax.backend.runways.util.JwtUtil
@@ -96,14 +97,14 @@ class UserApiServiceImpl(
             val updatedUser = existingUser.get()
 
             // 탈퇴한지 7일 이내인 경우
-            if (updatedUser.role == "ROLE_WITHDRAWAL" && updatedUser.updatedAt > LocalDateTime.now().minusDays(7)) {
+            if (updatedUser.role == Role.ROLE_WITHDRAWAL && updatedUser.updatedAt > LocalDateTime.now().minusDays(7)) {
                 return 0
-            } else if (updatedUser.role == "ROLE_WITHDRAWAL" && updatedUser.updatedAt < LocalDateTime.now().minusDays(7)) {
+            } else if (updatedUser.role == Role.ROLE_WITHDRAWAL  && updatedUser.updatedAt < LocalDateTime.now().minusDays(7)) {
                 // 탈퇴한지 7일이 경과한 경우
                 updatedUser.nickname = requestUserInfoDTO.nickname
                 updatedUser.gender = requestUserInfoDTO.gender
                 updatedUser.birthdate = requestUserInfoDTO.birthDate
-                updatedUser.role = "ROLE_USER"
+                updatedUser.role = Role.ROLE_USER
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
                 updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
@@ -117,6 +118,7 @@ class UserApiServiceImpl(
                 updatedUser.updatedAt = LocalDateTime.now()
                 updatedUser.marketing = requestUserInfoDTO.marketing
                 updatedUser.accountPrivate = requestUserInfoDTO.accountPrivate
+                updatedUser.role=Role.ROLE_USER
                 userRepository.save(updatedUser)
                 return 2
             }
@@ -142,7 +144,7 @@ class UserApiServiceImpl(
             withdrawalUser.nickname = null
             withdrawalUser.gender = null
             withdrawalUser.follow = Follow()
-            withdrawalUser.role = "ROLE_WITHDRAWAL"
+            withdrawalUser.role = Role.ROLE_WITHDRAWAL
             withdrawalUser.profileImageUrl = null
             withdrawalUser.updatedAt = LocalDateTime.now()
             withdrawalUser.marketing = false
@@ -290,7 +292,7 @@ class UserApiServiceImpl(
 
     // 랭킹 조회
     override fun getRankingList(pageable: Pageable): Page<UserRankingDTO> {
-        val users = userRepository.findAllByRoleAndNicknameIsNotNullOrderByExperienceDesc("ROLE_USER", pageable)
+        val users = userRepository.findAllByRoleAndNicknameIsNotNullOrderByExperienceDesc(Role.ROLE_USER.name, pageable)
         return users.map { user ->
             UserRankingDTO(
                 id = user.id,

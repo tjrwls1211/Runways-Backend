@@ -24,7 +24,7 @@ class UserDetailService(private val userRepository: UserRepository) : UserDetail
 
         // 권한 리스트 생성 및 추가
         val authorities: MutableList<GrantedAuthority> = ArrayList()
-        authorities.add(SimpleGrantedAuthority(userData.role))
+        authorities.add(SimpleGrantedAuthority(userData.role.name))
 
         // UserDetails 객체 반환
         return org.springframework.security.core.userdetails.User(userData.id, "", authorities)
