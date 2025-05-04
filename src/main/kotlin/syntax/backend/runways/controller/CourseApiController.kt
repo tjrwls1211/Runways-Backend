@@ -15,6 +15,7 @@ class CourseApiController(
     private val courseApiService: CourseApiService,
 ) {
 
+    // 코스 생성
     @PostMapping("/insert")
     fun createCourse(@RequestBody requestCourseDTO: RequestCourseDTO): ResponseEntity<UUID> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -22,6 +23,7 @@ class CourseApiController(
         return ResponseEntity.ok(newCourseId)
     }
 
+    // 코스 리스트 조회
     @GetMapping("/list")
     fun getCourseList(
         @RequestParam("page", defaultValue = "0") page: Int,
@@ -42,6 +44,7 @@ class CourseApiController(
         return ResponseEntity.ok(pagedResponse)
     }
 
+    // 코스 수정
     @PatchMapping("/update")
     fun updateCourse(@RequestBody requestUpdateCourseDTO: RequestUpdateCourseDTO): ResponseEntity<UUID> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -49,6 +52,7 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 코스 상세 조회
     @GetMapping("/{id}")
     fun getCourseById(@PathVariable id: UUID): ResponseEntity<ResponseCourseDetailDTO> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -56,6 +60,7 @@ class CourseApiController(
         return ResponseEntity.ok(course)
     }
 
+    // 코스 삭제
     @DeleteMapping("/delete/{courseId}")
     fun deleteCourse(@PathVariable courseId: UUID): ResponseEntity<String> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -63,6 +68,7 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 북마크 추가
     @PostMapping("/bookmark")
     fun addBookmark(@RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -70,6 +76,7 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 코스 전체 조회
     @GetMapping("/all")
     fun getAllCourses(
         @RequestParam("page", defaultValue = "0") page: Int,
@@ -90,6 +97,7 @@ class CourseApiController(
         return ResponseEntity.ok(pagedResponse)
     }
 
+    // 북마크 삭제
     @PatchMapping("/bookmark/remove")
     fun removeBookmark(@RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -97,6 +105,7 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 코스 검색
     @GetMapping("/search/{title}")
     fun searchCoursesByTitle(
         @PathVariable title: String,
@@ -118,12 +127,14 @@ class CourseApiController(
         return ResponseEntity.ok(pagedResponse)
     }
 
+    // 코스 조회수 증가
     @PostMapping("/hits")
     fun increaseHits(@RequestBody requestCourseIdDTO: RequestCourseIdDTO): ResponseEntity<String> {
         val result = courseApiService.increaseHits(requestCourseIdDTO.courseId)
         return ResponseEntity.ok(result)
     }
 
+    // 추천 코스 조회
     @GetMapping("/recommend")
     fun getRecommendedCourses(): ResponseEntity<List<ResponseRecommendCourseDTO>> {
         val userId = SecurityUtil.getCurrentUserId()
@@ -131,7 +142,7 @@ class CourseApiController(
         return ResponseEntity.ok(recommendedCourses)
     }
 
-
+    // 자동 코스 생성
     @PostMapping("/auto-generate")
     fun autoGenerateCourse(
         @RequestParam("question") question: String
@@ -141,6 +152,7 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 태그로 코스 검색
     @GetMapping("/search/tag/{tagName}")
     fun searchCoursesByTag(
         @PathVariable tagName: String,

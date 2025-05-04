@@ -36,6 +36,7 @@ interface CourseRepository : JpaRepository<Course, UUID> {
     @Query("""
         SELECT DISTINCT c
         FROM Course c 
+        LEFT JOIN FETCH c.maker m
         LEFT JOIN FETCH c.courseTags ct 
         LEFT JOIN FETCH ct.tag 
         WHERE c.id IN :ids
