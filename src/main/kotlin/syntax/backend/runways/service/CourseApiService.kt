@@ -8,21 +8,22 @@ import syntax.backend.runways.entity.User
 import java.util.*
 
 interface CourseApiService {
-    fun getMyCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO>
-    fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token : String) : UUID
-    fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO
-    fun deleteCourse(courseId: UUID, token: String): String
-    fun addBookmark(courseId: UUID, token: String): String
-    fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO>
-    fun removeBookmark(courseId: UUID, token: String): String
-    fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO>
+    fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO>
+    fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, userId : String) : UUID
+    fun getCourseById(courseId: UUID, userId : String): ResponseCourseDetailDTO
+    fun deleteCourse(courseId: UUID, userId: String): String
+    fun addBookmark(courseId: UUID, userId: String): String
+    fun getAllCourses(userId: String, pageable: Pageable): Page<ResponseCourseDTO>
+    fun removeBookmark(courseId: UUID, userId: String): String
+    fun searchCoursesByTitle(title: String, userId: String, pageable: Pageable): Page<ResponseCourseDTO>
     fun getCourseData(courseId: UUID): Course
-    fun createCourse(requestCourseDTO: RequestCourseDTO,token: String) : UUID
+    fun createCourse(requestCourseDTO: RequestCourseDTO, userId: String) : UUID
     fun increaseHits(courseId: UUID): String
-    fun getRecentCourses(token: String): ResponseRecommendCourseDTO?
+    fun getRecentCourses(userId: String): ResponseRecommendCourseDTO?
     fun getCourseList(userId:String, pageable: Pageable): Page<ResponseCourseDTO>
     fun getPopularCourses(): ResponseRecommendCourseDTO?
     fun getRisingCourse() : ResponseRecommendCourseDTO?
-    fun createCourseByLLM(question: String, token: String): Map<String, Any>
-    fun getCombinedRecommendCourses(token: String): List<ResponseRecommendCourseDTO>
+    fun createCourseByLLM(question: String, userId: String): Map<String, Any>
+    fun getCombinedRecommendCourses(userId: String): List<ResponseRecommendCourseDTO>
+    fun searchCoursesByTag(tagId: UUID, userId : String, pageable: Pageable): Page<ResponseCourseDTO>
 }

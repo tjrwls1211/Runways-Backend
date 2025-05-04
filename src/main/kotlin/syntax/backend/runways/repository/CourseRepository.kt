@@ -33,7 +33,13 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         pageable: Pageable
     ): Page<UUID>
 
-    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id IN :ids")
+    @Query("""
+        SELECT DISTINCT c
+        FROM Course c 
+        LEFT JOIN FETCH c.courseTags ct 
+        LEFT JOIN FETCH ct.tag 
+        WHERE c.id IN :ids
+    """)
     fun findCoursesWithTagsByIds(@Param("ids") ids: List<UUID>): List<Course>
 
     @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id IN :ids AND c.status = :status")
@@ -41,4 +47,14 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         @Param("ids") ids: List<UUID>,
         @Param("status") status: CourseStatus
     ): List<Course>
+
+    // 코스 ID만 페이징
+    @Query("""
+        SELECT c.id
+        FROM Course c
+        JOIN c.courseTags ct
+        WHERE ct.tag.id = :tagId
+        ORDER BY c.usageCount DESC
+    """)
+    fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, pageable: Pageable): Page<UUID>
 }
