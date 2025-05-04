@@ -141,15 +141,15 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
-    @GetMapping("/search/tag/{tagId}")
+    @GetMapping("/search/tag/{tagName}")
     fun searchCoursesByTag(
-        @PathVariable tagId: UUID,
+        @PathVariable tagName: String,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
     ): ResponseEntity<PagedResponse<ResponseCourseDTO>> {
         val pageable = PageRequest.of(page, size)
         val userId = SecurityUtil.getCurrentUserId()
-        val courses = courseApiService.searchCoursesByTag(tagId, userId, pageable)
+        val courses = courseApiService.searchCoursesByTag(tagName, userId, pageable)
 
         val pagedResponse = PagedResponse(
             content = courses.content,

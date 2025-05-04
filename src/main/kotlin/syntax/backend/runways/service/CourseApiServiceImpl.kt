@@ -622,9 +622,14 @@ class CourseApiServiceImpl(
         return listOfNotNull(recentCourse, popularCourse, risingCourse)
     }
 
-    override fun searchCoursesByTag(tagId: UUID, userId : String, pageable: Pageable): Page<ResponseCourseDTO> {
+    // 태그로 코스 검색
+    override fun searchCoursesByTag(tagName: String, userId : String, pageable: Pageable): Page<ResponseCourseDTO> {
+        // 태그 이름으로 태그 ID 조회
+        val tag = tagRepository.findByName(tagName)
+            ?: throw EntityNotFoundException("태그를 찾을 수 없습니다: $tagName")
+
         // 코스 ID만 조회 usageCount 기준 정렬하고 페이징 함
-        val courseIdsPage = courseRepository.findCourseIdsByTagId(tagId, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, pageable)
         val courseIds = courseIdsPage.content
 
         // fetch join 조회

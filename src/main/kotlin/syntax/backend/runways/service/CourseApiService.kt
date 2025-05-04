@@ -25,5 +25,5 @@ interface CourseApiService {
     fun getRisingCourse() : ResponseRecommendCourseDTO?
     fun createCourseByLLM(question: String, userId: String): Map<String, Any>
     fun getCombinedRecommendCourses(userId: String): List<ResponseRecommendCourseDTO>
-    fun searchCoursesByTag(tagId: UUID, userId : String, pageable: Pageable): Page<ResponseCourseDTO>
+    fun searchCoursesByTag(tagName: String, userId : String, pageable: Pageable): Page<ResponseCourseDTO>
 }
