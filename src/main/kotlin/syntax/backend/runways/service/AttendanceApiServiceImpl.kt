@@ -15,8 +15,8 @@ class AttendanceApiServiceImpl(
 ) : AttendanceApiService {
 
     // 출석체크
-    override fun checkAttendance(token: String, attendanceDTO: AttendanceDTO): Boolean {
-        val user = userApiService.getUserDataFromToken(token)
+    override fun checkAttendance(userId: String, attendanceDTO: AttendanceDTO): Boolean {
+        val user = userApiService.getUserDataFromId(userId)
         val now = LocalDateTime.now()
 
         // 00:00 ~ 04:29 사이인지 확인
@@ -25,7 +25,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val existingAttendance = attendanceRepository.findByUserAndDate(user, targetDate)
+        val existingAttendance = attendanceRepository.findByUserIdAndDate(userId, targetDate)
 
         // 이미 출석체크가 되어 있는 경우
         if (existingAttendance != null) {
@@ -45,8 +45,7 @@ class AttendanceApiServiceImpl(
     }
 
     // 출석체크 내용 확인
-    override fun getAttendance(token: String): AttendanceDTO? {
-        val user = userApiService.getUserDataFromToken(token)
+    override fun getAttendance(userId: String): AttendanceDTO? {
         val now = LocalDateTime.now()
 
         // 00:00 ~ 04:29 사이인지 확인
@@ -55,7 +54,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val attendance =  attendanceRepository.findByUserAndDate(user, targetDate)
+        val attendance =  attendanceRepository.findByUserIdAndDate(userId, targetDate)
 
         if (attendance == null) {
             return null
@@ -71,8 +70,7 @@ class AttendanceApiServiceImpl(
     }
 
     // 출석체크 수정
-    override fun updateAttendance(token: String, attendanceDTO: AttendanceDTO): Boolean {
-        val user = userApiService.getUserDataFromToken(token)
+    override fun updateAttendance(userId: String, attendanceDTO: AttendanceDTO): Boolean {
         val now = LocalDateTime.now()
 
         // 00:00 ~ 04:29 사이인지 확인
@@ -81,7 +79,7 @@ class AttendanceApiServiceImpl(
         // 조회할 날짜 설정
         val targetDate = if (isEarlyMorning) LocalDate.now().minusDays(1) else LocalDate.now()
 
-        val existingAttendance = attendanceRepository.findByUserAndDate(user, targetDate)
+        val existingAttendance = attendanceRepository.findByUserIdAndDate(userId, targetDate)
 
         // 출석체크가 되어 있지 않은 경우
         if (existingAttendance == null) {

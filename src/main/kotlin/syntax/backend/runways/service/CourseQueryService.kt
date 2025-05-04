@@ -21,6 +21,7 @@ class CourseQueryService(
 ) {
     private val geoJsonWriter = GeoJsonWriter()
 
+    // 코스 목록 조회
     fun getCourseList(userId: String, pageable: Pageable, status: Boolean): Page<ResponseCourseDTO> {
         // 상태에 따라 CourseStatus 목록 설정
         val statuses = if (status) {
@@ -72,7 +73,8 @@ class CourseQueryService(
                 tag = tags,
                 sido = sido,
                 sigungu = sigungu,
-                commentCount = commentCount
+                commentCount = commentCount,
+                usageCount = course.usageCount,
             )
         }
 

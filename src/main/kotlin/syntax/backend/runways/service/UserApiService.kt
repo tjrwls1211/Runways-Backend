@@ -11,11 +11,12 @@ import syntax.backend.runways.entity.User
 
 interface UserApiService {
     fun getUserDataFromToken(token: String): User
-    fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO
-    fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO) : Int
+    fun getUserDataFromId(userId: String): User
+    fun getUserInfoFromUserId(userId: String, pageable: Pageable): ResponseMyInfoDTO
+    fun updateUserInfo(userId: String, requestUserInfoDTO: RequestUserInfoDTO) : Int
     fun isNicknameDuplicate(nickname: String): Boolean
-    fun deleteUser(token: String)
-    fun registerDeviceId(token: String, deviceId:String)
+    fun deleteUser(userId: String)
+    fun registerDeviceId(userId: String, deviceId:String)
     fun addFollow(senderId: String, receiverId: String)
     fun removeFollowing(senderId: String, receiverId: String)
     fun removeFollower(senderId: String, receiverId: String)

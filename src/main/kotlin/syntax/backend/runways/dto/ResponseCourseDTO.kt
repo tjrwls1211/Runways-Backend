@@ -26,5 +26,6 @@ data class ResponseCourseDTO (
     val tag : List<Tag>,
     val sido : String?,
     val sigungu : String?,
-    val commentCount : Long,
+    val commentCount : Int,
+    val usageCount : Int
 )

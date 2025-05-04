@@ -8,6 +8,7 @@ import syntax.backend.runways.dto.NotificationRequestDTO
 import syntax.backend.runways.dto.PagedResponse
 import syntax.backend.runways.service.ExpoPushNotificationService
 import syntax.backend.runways.service.NotificationApiService
+import syntax.backend.runways.util.SecurityUtil
 import java.util.UUID
 
 @RestController
@@ -19,13 +20,12 @@ class NotificationApiController(
 
     @GetMapping("/list")
     fun getNotifications(
-        @RequestHeader("Authorization") token: String,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
     ): ResponseEntity<PagedResponse<NotificationDTO>> {
         val pageable = PageRequest.of(page, size)
-        val jwtToken = token.substring(7)
-        val notifications = notificationApiService.getNotifications(jwtToken, pageable)
+        val userId = SecurityUtil.getCurrentUserId()
+        val notifications = notificationApiService.getNotifications(userId, pageable)
 
         val pagedResponse = PagedResponse(
             content = notifications.content,

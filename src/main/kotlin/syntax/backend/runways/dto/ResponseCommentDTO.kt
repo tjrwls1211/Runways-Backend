@@ -10,7 +10,7 @@ data class ResponseCommentDTO (
     val updatedAt : LocalDateTime,
     val author : String,
     val parent : UUID?,
-    val childCount : Long,
+    val childCount : Int,
     val imageUrl : String?,
     val maker : Boolean
 )

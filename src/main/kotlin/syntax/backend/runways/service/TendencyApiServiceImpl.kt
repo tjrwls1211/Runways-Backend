@@ -12,8 +12,8 @@ class TendencyApiServiceImpl (
 ): TendencyApiService {
 
     // 성향 저장
-    override fun saveTendency(token: String, tendencyDTO: TendencyDTO) {
-        val user = userApiService.getUserDataFromToken(token)
+    override fun saveTendency(userId: String, tendencyDTO: TendencyDTO) {
+        val user = userApiService.getUserDataFromId(userId)
 
         // 이미 성향 데이터가 존재하는 경우
         val existingTendency = tendencyRepository.findByUser(user)
@@ -40,8 +40,8 @@ class TendencyApiServiceImpl (
     }
 
     // 성향 데이터 확인
-    override fun getTendency(token: String): TendencyDTO? {
-        val user = userApiService.getUserDataFromToken(token)
+    override fun getTendency(usrId: String): TendencyDTO? {
+        val user = userApiService.getUserDataFromId(usrId)
         val tendency = tendencyRepository.findByUser(user)
 
         return if (tendency != null) {

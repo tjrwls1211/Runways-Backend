@@ -25,10 +25,7 @@ class CommentApiServiceImpl (
 ) : CommentApiService {
 
     // 댓글 불러오기(답글 X)
-    override fun getParentCommentList(courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
-        // 토큰에서 사용자 정보 가져오기
-        val user = userApiService.getUserDataFromToken(token)
-
+    override fun getParentCommentList(courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 댓글 불러오기
         val status = CommentStatus.PUBLIC
         val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
@@ -45,17 +42,14 @@ class CommentApiServiceImpl (
                     parent = comment.parent?.id,
                     childCount = childCount,
                     imageUrl = comment.imageUrl,
-                    maker = comment.author.id == user.id
+                    maker = comment.author.id == userId
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
     }
 
     // 댓글 불러오기(답글 O)
-    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
-        // 토큰에서 사용자 정보 가져오기
-        val user = userApiService.getUserDataFromToken(token)
-
+    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 답글 불러오기
         val status = CommentStatus.PUBLIC
         val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
@@ -72,16 +66,16 @@ class CommentApiServiceImpl (
                     parent = comment.parent?.id,
                     childCount = childCount,
                     imageUrl = comment.imageUrl,
-                    maker = comment.author.id == user.id
+                    maker = comment.author.id == userId
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
     }
 
     // 댓글 입력
-    override fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, token: String): ResponseCommentDTO {
+    override fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, userId: String): ResponseCommentDTO {
         val courseData = courseApiService.getCourseData(requestInsertCommentDTO.courseId)
-        val user = userApiService.getUserDataFromToken(token)
+        val user = userApiService.getUserDataFromId(userId)
         val parent = requestInsertCommentDTO.parentId?.let { commentRepository.findById(it).orElse(null) }
 
         val newComment = Comment(
@@ -144,11 +138,10 @@ class CommentApiServiceImpl (
     }
 
     // 댓글 업데이트
-    override fun updateComment(updateCommentDTO: UpdateCommentDTO, token: String): String {
+    override fun updateComment(updateCommentDTO: UpdateCommentDTO, userId: String): String {
         val commentData = commentRepository.findById(updateCommentDTO.commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
-        val user = userApiService.getUserDataFromToken(token)
 
-        if (commentData.author.id != user.id) {
+        if (commentData.author.id != userId) {
             throw NotAuthorException("댓글 작성자가 아닙니다.")
         }
 
@@ -163,13 +156,14 @@ class CommentApiServiceImpl (
     }
 
     // 댓글 삭제
-    override fun deleteComment(commentId: UUID, token: String): String {
+    override fun deleteComment(commentId: UUID, userId: String): String {
         val commentData = commentRepository.findById(commentId)
         val childComment = commentRepository.findByParent_Id(commentId)
         if (commentData.isPresent) {
             val comment = commentData.get()
-            val user = userApiService.getUserDataFromToken(token)
-            if (comment.author.id != user.id) {
+
+            // 댓글 작성자와 요청한 사용자가 같은지 확인
+            if (comment.author.id != userId) {
                 throw NotAuthorException("댓글 작성자가 아닙니다.")
             }
             comment.status = CommentStatus.DELETED

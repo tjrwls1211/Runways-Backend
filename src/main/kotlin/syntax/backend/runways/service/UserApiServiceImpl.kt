@@ -32,9 +32,19 @@ class UserApiServiceImpl(
         }
     }
 
-    override fun getUserInfoFromToken(token: String, pageable: Pageable): ResponseMyInfoDTO {
-        val id = jwtUtil.extractUsername(token)
-        val user: Optional<User> = userRepository.findById(id)
+    // 아이디로 유저 정보 가져오기
+    override fun getUserDataFromId(userId : String): User {
+        val user: Optional<User> = userRepository.findById(userId)
+        if (user.isPresent) {
+            return user.get()
+        } else {
+            throw Exception("User not found")
+        }
+    }
+
+    // 본인 정보 반환
+    override fun getUserInfoFromUserId(userId : String, pageable: Pageable): ResponseMyInfoDTO {
+        val user: Optional<User> = userRepository.findById(userId)
         if (user.isPresent) {
             val userInfo = user.get()
             return ResponseMyInfoDTO(
@@ -49,7 +59,7 @@ class UserApiServiceImpl(
                 follow = userInfo.follow,
                 marketing = userInfo.marketing,
                 accountPrivate = userInfo.accountPrivate,
-                courses = courseQueryService.getCourseList(id, pageable, false),
+                courses = courseQueryService.getCourseList(userId, pageable, false),
                 experience = userInfo.experience * 0.1f,
             )
         } else {
@@ -78,9 +88,8 @@ class UserApiServiceImpl(
     }
 
     // 사용자 정보 업데이트
-    override fun updateUserInfo(token: String, requestUserInfoDTO: RequestUserInfoDTO): Int {
-        val id = jwtUtil.extractUsername(token)
-        val existingUser = userRepository.findById(id)
+    override fun updateUserInfo(userId: String, requestUserInfoDTO: RequestUserInfoDTO): Int {
+        val existingUser = userRepository.findById(userId)
 
         // 사용자가 존재하면 업데이트
         if (existingUser.isPresent) {
@@ -122,9 +131,8 @@ class UserApiServiceImpl(
     }
 
     // 사용자 삭제
-    override fun deleteUser(token: String) {
-        val id = jwtUtil.extractUsername(token)
-        val deleteUser = userRepository.findById(id)
+    override fun deleteUser(userId: String) {
+        val deleteUser = userRepository.findById(userId)
         if (deleteUser.isPresent) {
             val withdrawalUser = deleteUser.get()
             withdrawalUser.name = null
@@ -146,9 +154,8 @@ class UserApiServiceImpl(
     }
 
     // 디바이스 ID 업데이트
-    override fun registerDeviceId(token: String, deviceId:String) {
-        val id = jwtUtil.extractUsername(token)
-        val existingUser = userRepository.findById(id)
+    override fun registerDeviceId(userId: String, deviceId:String) {
+        val existingUser = userRepository.findById(userId)
 
         var cleanedDeviceId = deviceId
         if (cleanedDeviceId.contains("{") || cleanedDeviceId.contains("}")) {

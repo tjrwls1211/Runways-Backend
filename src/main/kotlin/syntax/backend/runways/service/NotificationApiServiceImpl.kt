@@ -18,8 +18,7 @@ class NotificationApiServiceImpl(
 ) : NotificationApiService {
 
     // 알림 불러오기
-    override fun getNotifications(token: String, pageable: Pageable): Page<NotificationDTO> {
-        val userId = jwtUtil.extractUsername(token)
+    override fun getNotifications(userId: String, pageable: Pageable): Page<NotificationDTO> {
         val notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
         val notificationDTOs = notifications.content.map { notification ->
             NotificationDTO(

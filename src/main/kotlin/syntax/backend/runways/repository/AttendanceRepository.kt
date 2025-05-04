@@ -7,5 +7,5 @@ import java.time.LocalDate
 import java.util.UUID
 
 interface AttendanceRepository : JpaRepository<Attendance, UUID> {
-    fun findByUserAndDate(user: User, date: LocalDate): Attendance?
+    fun findByUserIdAndDate(userId: String, date: LocalDate): Attendance?
 }
