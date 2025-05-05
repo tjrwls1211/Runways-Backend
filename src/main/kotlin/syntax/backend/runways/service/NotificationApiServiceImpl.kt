@@ -7,20 +7,19 @@ import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.NotificationDTO
 import syntax.backend.runways.entity.Notification
 import syntax.backend.runways.entity.User
-import syntax.backend.runways.repository.NotificationApiRepository
+import syntax.backend.runways.repository.NotificationRepository
 import syntax.backend.runways.util.JwtUtil
 import java.util.*
 
 @Service
 class NotificationApiServiceImpl(
     private val jwtUtil: JwtUtil,
-    private val notificationApiRepository: NotificationApiRepository
+    private val notificationRepository: NotificationRepository
 ) : NotificationApiService {
 
     // 알림 불러오기
-    override fun getNotifications(token: String, pageable: Pageable): Page<NotificationDTO> {
-        val userId = jwtUtil.extractUsername(token)
-        val notifications = notificationApiRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+    override fun getNotifications(userId: String, pageable: Pageable): Page<NotificationDTO> {
+        val notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
         val notificationDTOs = notifications.content.map { notification ->
             NotificationDTO(
                 id = notification.id,
@@ -37,11 +36,11 @@ class NotificationApiServiceImpl(
 
     // 알림 읽음 처리
     override fun markAsRead(notificationId: UUID): Boolean {
-        val notification = notificationApiRepository.findById(notificationId)
+        val notification = notificationRepository.findById(notificationId)
         if (notification.isPresent) {
             val existingNotification = notification.get()
             existingNotification.read = true
-            notificationApiRepository.save(existingNotification)
+            notificationRepository.save(existingNotification)
             return true
         }
         return false
@@ -57,14 +56,14 @@ class NotificationApiServiceImpl(
             user = user,
             courseId = courseId
         )
-        notificationApiRepository.save(notification)
+        notificationRepository.save(notification)
     }
 
     // 알림 삭제
     override fun deleteNotification(notificationId: UUID): Boolean {
-        val notification = notificationApiRepository.findById(notificationId)
+        val notification = notificationRepository.findById(notificationId)
         if (notification.isPresent) {
-            notificationApiRepository.delete(notification.get())
+            notificationRepository.delete(notification.get())
             return true
         } else {
             return false

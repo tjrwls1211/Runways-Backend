@@ -4,12 +4,12 @@ import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestReportDTO
 import syntax.backend.runways.entity.Report
 import syntax.backend.runways.entity.ReportType
-import syntax.backend.runways.repository.ReportApiRepository
+import syntax.backend.runways.repository.ReportRepository
 import java.util.*
 
 @Service
 class ReportApiServiceImpl(
-    private val reportApiRepository: ReportApiRepository
+    private val reportRepository: ReportRepository
 ) : ReportApiService {
 
 
@@ -24,7 +24,7 @@ class ReportApiServiceImpl(
             detailId = requestReportDTO.detailId,
             content = requestReportDTO.content
         )
-        return reportApiRepository.save(report)
+        return reportRepository.save(report)
     }
 
     private fun isValidUuid(uuid: String): Boolean {

@@ -10,5 +10,5 @@ data class CourseSummary(
     val distance: Float,
     val mapUrl: String,
     val tags : List<String>,
-    val useCount : Int,
+    val usageCount : Int,
 )

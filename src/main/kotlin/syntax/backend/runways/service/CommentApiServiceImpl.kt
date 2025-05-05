@@ -12,12 +12,12 @@ import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.exception.NotAuthorException
-import syntax.backend.runways.repository.CommentApiRepository
+import syntax.backend.runways.repository.CommentRepository
 import java.util.*
 
 @Service
 class CommentApiServiceImpl (
-    private val commentApiRepository: CommentApiRepository,
+    private val commentRepository: CommentRepository,
     private val courseApiService : CourseApiService,
     private val userApiService: UserApiService,
     private val expoPushNotificationService: ExpoPushNotificationService,
@@ -25,17 +25,14 @@ class CommentApiServiceImpl (
 ) : CommentApiService {
 
     // 댓글 불러오기(답글 X)
-    override fun getParentCommentList(courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
-        // 토큰에서 사용자 정보 가져오기
-        val user = userApiService.getUserDataFromToken(token)
-
+    override fun getParentCommentList(courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 댓글 불러오기
         val status = CommentStatus.PUBLIC
-        val commentData = commentApiRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
+        val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         val filteredComments = commentData
             .filter { it.parent == null }
             .map { comment ->
-                val childCount = commentApiRepository.countByParent_IdAndStatus(comment.id, status)
+                val childCount = commentRepository.countByParent_IdAndStatus(comment.id, status)
                 ResponseCommentDTO(
                     id = comment.id,
                     content = comment.content,
@@ -45,24 +42,21 @@ class CommentApiServiceImpl (
                     parent = comment.parent?.id,
                     childCount = childCount,
                     imageUrl = comment.imageUrl,
-                    maker = comment.author.id == user.id
+                    maker = comment.author.id == userId
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
     }
 
     // 댓글 불러오기(답글 O)
-    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO> {
-        // 토큰에서 사용자 정보 가져오기
-        val user = userApiService.getUserDataFromToken(token)
-
+    override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 답글 불러오기
         val status = CommentStatus.PUBLIC
-        val commentData = commentApiRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
+        val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
         val filteredComments = commentData
             .filter { it.parent?.id == parentId }
             .map { comment ->
-                val childCount = commentApiRepository.countByParent_IdAndStatus(comment.id, status)
+                val childCount = commentRepository.countByParent_IdAndStatus(comment.id, status)
                 ResponseCommentDTO(
                     id = comment.id,
                     content = comment.content,
@@ -72,17 +66,17 @@ class CommentApiServiceImpl (
                     parent = comment.parent?.id,
                     childCount = childCount,
                     imageUrl = comment.imageUrl,
-                    maker = comment.author.id == user.id
+                    maker = comment.author.id == userId
                 )
             }.toList()
         return PageImpl(filteredComments, pageable, commentData.totalElements)
     }
 
     // 댓글 입력
-    override fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, token: String): ResponseCommentDTO {
+    override fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, userId: String): ResponseCommentDTO {
         val courseData = courseApiService.getCourseData(requestInsertCommentDTO.courseId)
-        val user = userApiService.getUserDataFromToken(token)
-        val parent = requestInsertCommentDTO.parentId?.let { commentApiRepository.findById(it).orElse(null) }
+        val user = userApiService.getUserDataFromId(userId)
+        val parent = requestInsertCommentDTO.parentId?.let { commentRepository.findById(it).orElse(null) }
 
         val newComment = Comment(
             content = requestInsertCommentDTO.content,
@@ -94,7 +88,7 @@ class CommentApiServiceImpl (
         )
 
         // 댓글 저장
-        commentApiRepository.save(newComment)
+        commentRepository.save(newComment)
 
         // 푸시 알림 전송
         val title = "새로운 댓글이 등록됐어요!"
@@ -144,11 +138,10 @@ class CommentApiServiceImpl (
     }
 
     // 댓글 업데이트
-    override fun updateComment(updateCommentDTO: UpdateCommentDTO, token: String): String {
-        val commentData = commentApiRepository.findById(updateCommentDTO.commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
-        val user = userApiService.getUserDataFromToken(token)
+    override fun updateComment(updateCommentDTO: UpdateCommentDTO, userId: String): String {
+        val commentData = commentRepository.findById(updateCommentDTO.commentId).orElse(null) ?: throw EntityNotFoundException("Comment not found")
 
-        if (commentData.author.id != user.id) {
+        if (commentData.author.id != userId) {
             throw NotAuthorException("댓글 작성자가 아닙니다.")
         }
 
@@ -157,27 +150,28 @@ class CommentApiServiceImpl (
             content = updateCommentDTO.content,
             imageUrl = updateCommentDTO.imageUrl
         )
-        commentApiRepository.save(updatedCourse)
+        commentRepository.save(updatedCourse)
 
         return "댓글 업데이트 성공"
     }
 
     // 댓글 삭제
-    override fun deleteComment(commentId: UUID, token: String): String {
-        val commentData = commentApiRepository.findById(commentId)
-        val childComment = commentApiRepository.findByParent_Id(commentId)
+    override fun deleteComment(commentId: UUID, userId: String): String {
+        val commentData = commentRepository.findById(commentId)
+        val childComment = commentRepository.findByParent_Id(commentId)
         if (commentData.isPresent) {
             val comment = commentData.get()
-            val user = userApiService.getUserDataFromToken(token)
-            if (comment.author.id != user.id) {
+
+            // 댓글 작성자와 요청한 사용자가 같은지 확인
+            if (comment.author.id != userId) {
                 throw NotAuthorException("댓글 작성자가 아닙니다.")
             }
             comment.status = CommentStatus.DELETED
-            commentApiRepository.save(comment)
+            commentRepository.save(comment)
             if (childComment.isNotEmpty()) {
                 for (child in childComment) {
                     child.status = CommentStatus.DELETED
-                    commentApiRepository.save(child)
+                    commentRepository.save(child)
                 }
             }
             return "댓글 삭제 성공"

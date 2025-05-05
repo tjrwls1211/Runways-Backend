@@ -9,7 +9,7 @@ import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
-interface CourseApiRepository : JpaRepository<Course, UUID> {
+interface CourseRepository : JpaRepository<Course, UUID> {
     @Query("SELECT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id = :courseId")
     fun findByIdWithTags(@Param("courseId") courseId: UUID): Optional<Course>
 
@@ -33,7 +33,14 @@ interface CourseApiRepository : JpaRepository<Course, UUID> {
         pageable: Pageable
     ): Page<UUID>
 
-    @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id IN :ids")
+    @Query("""
+        SELECT DISTINCT c
+        FROM Course c 
+        LEFT JOIN FETCH c.maker m
+        LEFT JOIN FETCH c.courseTags ct 
+        LEFT JOIN FETCH ct.tag 
+        WHERE c.id IN :ids
+    """)
     fun findCoursesWithTagsByIds(@Param("ids") ids: List<UUID>): List<Course>
 
     @Query("SELECT DISTINCT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id IN :ids AND c.status = :status")
@@ -41,4 +48,14 @@ interface CourseApiRepository : JpaRepository<Course, UUID> {
         @Param("ids") ids: List<UUID>,
         @Param("status") status: CourseStatus
     ): List<Course>
+
+    // 코스 ID만 페이징
+    @Query("""
+        SELECT c.id
+        FROM Course c
+        JOIN c.courseTags ct
+        WHERE ct.tag.id = :tagId
+        ORDER BY c.usageCount DESC
+    """)
+    fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, pageable: Pageable): Page<UUID>
 }

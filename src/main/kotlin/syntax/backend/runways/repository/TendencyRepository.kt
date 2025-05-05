@@ -5,6 +5,6 @@ import syntax.backend.runways.entity.Tendency
 import syntax.backend.runways.entity.User
 import java.util.UUID
 
-interface TendencyApiRepository  : JpaRepository<Tendency, UUID> {
+interface TendencyRepository  : JpaRepository<Tendency, UUID> {
     fun findByUser(User: User): Tendency?
 }

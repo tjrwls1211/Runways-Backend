@@ -3,6 +3,7 @@ package syntax.backend.runways.dto
 import com.fasterxml.jackson.databind.node.ObjectNode
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.Hits
+import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.entity.User
 import java.time.LocalDateTime
 import java.util.*
@@ -21,8 +22,9 @@ data class ResponseCourseDetailDTO (
     val updatedAt: LocalDateTime,
     val author : Boolean,
     val status : CourseStatus,
-    val tag : List<String>,
+    val tag : List<Tag>,
     val sido : String?,
     val sigungu : String?,
-    val commentCount : Long,
+    val commentCount : Int,
+    val usageCount : Int,
 )

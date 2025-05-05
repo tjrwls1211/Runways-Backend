@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import syntax.backend.runways.dto.AttendanceDTO
 import syntax.backend.runways.service.AttendanceApiService
+import syntax.backend.runways.util.SecurityUtil
 
 @RestController
 @RequestMapping("api/attendance")
@@ -18,11 +19,10 @@ class AttendanceApiController (
 ){
     @PostMapping("/check")
     fun checkAttendance(
-        @RequestHeader("Authorization") token: String,
         @RequestBody attendanceDTO: AttendanceDTO
     ): ResponseEntity<Void> {
-        val jwtToken = token.substring(7)
-        val isChecked = attendanceApiService.checkAttendance(jwtToken, attendanceDTO)
+        val userId = SecurityUtil.getCurrentUserId()
+        val isChecked = attendanceApiService.checkAttendance(userId, attendanceDTO)
         return if (isChecked) {
             ResponseEntity.ok().build()
         } else {
@@ -31,11 +31,9 @@ class AttendanceApiController (
     }
 
     @GetMapping("/detail")
-    fun getAttendanceDetails(
-        @RequestHeader("Authorization") token: String
-    ): ResponseEntity<AttendanceDTO> {
-        val jwtToken = token.substring(7)
-        val attendanceDetails = attendanceApiService.getAttendance(jwtToken)
+    fun getAttendanceDetails(): ResponseEntity<AttendanceDTO> {
+        val userId = SecurityUtil.getCurrentUserId()
+        val attendanceDetails = attendanceApiService.getAttendance(userId)
         return if (attendanceDetails != null) {
             ResponseEntity.ok(attendanceDetails)
         } else {
@@ -44,12 +42,9 @@ class AttendanceApiController (
     }
 
     @PatchMapping("/update")
-    fun updateAttendance(
-        @RequestHeader("Authorization") token: String,
-        @RequestBody attendanceDTO: AttendanceDTO
-    ): ResponseEntity<Void> {
-        val jwtToken = token.substring(7)
-        val isUpdated = attendanceApiService.updateAttendance(jwtToken, attendanceDTO)
+    fun updateAttendance(@RequestBody attendanceDTO: AttendanceDTO): ResponseEntity<Void> {
+        val userId = SecurityUtil.getCurrentUserId()
+        val isUpdated = attendanceApiService.updateAttendance(userId, attendanceDTO)
         return if (isUpdated) {
             ResponseEntity.ok().build()
         } else {

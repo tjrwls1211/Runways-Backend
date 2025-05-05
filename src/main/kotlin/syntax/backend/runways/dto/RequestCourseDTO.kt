@@ -1,6 +1,7 @@
 package syntax.backend.runways.dto
 
 import syntax.backend.runways.entity.CourseStatus
+import java.util.UUID
 
 data class RequestCourseDTO (
     val title: String,
@@ -9,4 +10,5 @@ data class RequestCourseDTO (
     val coordinate: String,
     val mapUrl: String,
     val status : CourseStatus,
+    val tag : List<UUID>,
 )

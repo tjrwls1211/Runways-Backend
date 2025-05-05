@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import syntax.backend.runways.dto.TendencyDTO
 import syntax.backend.runways.service.TendencyApiService
+import syntax.backend.runways.util.SecurityUtil
 
 @RestController
 @RequestMapping("api/tendency")
@@ -17,17 +18,17 @@ class TendencyApiController (
 ){
     // 성향 저장
     @PostMapping("/save")
-    fun saveTendency(@RequestHeader("Authorization") token: String, @RequestBody tendencyDTO: TendencyDTO): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        tendencyApiService.saveTendency(jwtToken, tendencyDTO)
+    fun saveTendency(@RequestBody tendencyDTO: TendencyDTO): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        tendencyApiService.saveTendency(userId, tendencyDTO)
         return ResponseEntity.ok("성향 저장 성공")
     }
 
     // 성향 데이터 확인
     @GetMapping("/get")
-    fun getTendency(@RequestHeader("Authorization") token: String): ResponseEntity<TendencyDTO?> {
-        val jwtToken = token.substring(7)
-        val tendency = tendencyApiService.getTendency(jwtToken)
+    fun getTendency(): ResponseEntity<TendencyDTO?> {
+        val userId = SecurityUtil.getCurrentUserId()
+        val tendency = tendencyApiService.getTendency(userId)
         return if (tendency != null) {
             ResponseEntity.ok(tendency)
         } else {

@@ -6,6 +6,6 @@ import syntax.backend.runways.entity.User
 import java.time.LocalDate
 import java.util.UUID
 
-interface AttendanceApiRepository : JpaRepository<Attendance, UUID> {
-    fun findByUserAndDate(user: User, date: LocalDate): Attendance?
+interface AttendanceRepository : JpaRepository<Attendance, UUID> {
+    fun findByUserIdAndDate(userId: String, date: LocalDate): Attendance?
 }

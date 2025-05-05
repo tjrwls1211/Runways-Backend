@@ -53,6 +53,9 @@ data class Course(
     @Column(name = "status", nullable = false)
     var status: CourseStatus = CourseStatus.PUBLIC,
 
+    @Column(name = "usage_count", nullable = false)
+    var usageCount : Int = 0,
+
     @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true,)
     @JsonManagedReference
     var courseTags: MutableList<CourseTag> = mutableListOf()

@@ -22,8 +22,9 @@ data class User(
     @Column(nullable = false, length = 6)
     var platform: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    var role: String = "ROLE_USER",
+    var role: Role = Role.ROLE_GUEST,
 
     var birthdate: LocalDate,
 

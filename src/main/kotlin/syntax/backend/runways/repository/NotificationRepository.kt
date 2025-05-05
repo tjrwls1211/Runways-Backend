@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import syntax.backend.runways.entity.Notification
 import java.util.UUID
 
-interface NotificationApiRepository : JpaRepository<Notification,UUID> {
+interface NotificationRepository : JpaRepository<Notification,UUID> {
     fun findByUserIdOrderByCreatedAtDesc(userId: String, pageable: Pageable): Page<Notification>
 }

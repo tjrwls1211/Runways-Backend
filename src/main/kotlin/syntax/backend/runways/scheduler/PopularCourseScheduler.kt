@@ -3,9 +3,9 @@ package syntax.backend.runways.scheduler
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import syntax.backend.runways.entity.PopularCourse
-import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.PopularCourseRepository
-import syntax.backend.runways.repository.RunningLogApiRepository
+import syntax.backend.runways.repository.RunningLogRepository
 import syntax.backend.runways.entity.CourseStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -13,8 +13,8 @@ import java.time.LocalTime
 
 @Component
 class PopularCourseScheduler(
-    private val runningLogApiRepository: RunningLogApiRepository,
-    private val courseApiRepository: CourseApiRepository,
+    private val runningLogRepository: RunningLogRepository,
+    private val courseRepository: CourseRepository,
     private val popularCourseRepository: PopularCourseRepository
 ) {
 
@@ -32,7 +32,7 @@ class PopularCourseScheduler(
         val startTime = endTime.minusHours(1)
 
         // RunningLog에서 코스별 이용 횟수 집계
-        val runningLogs = runningLogApiRepository.findByEndTimeBetween(startTime, endTime)
+        val runningLogs = runningLogRepository.findByEndTimeBetween(startTime, endTime)
         if (runningLogs.isEmpty()) {
             println("RunningLog 데이터가 없습니다. startTime: $startTime, endTime: $endTime")
             return
@@ -51,7 +51,7 @@ class PopularCourseScheduler(
             return
         }
 
-        val courses = courseApiRepository.findCoursesWithTagsByIdsAndStatus(courseIds, CourseStatus.PUBLIC)
+        val courses = courseRepository.findCoursesWithTagsByIdsAndStatus(courseIds, CourseStatus.PUBLIC)
         if (courses.isEmpty()) {
             println("PUBLIC 상태의 코스가 없습니다. courseIds: $courseIds")
             return
@@ -59,21 +59,21 @@ class PopularCourseScheduler(
 
         // 코스별 PopularCourse 엔티티 업데이트 또는 생성
         courses.forEach { course ->
-            val useCount = courseIdCountMap[course.id] ?: 0
+            val usageCount = courseIdCountMap[course.id] ?: 0
 
             // 기존 데이터 조회
             val existingCourse = popularCourseRepository.findByDateAndCourseId(targetDate, course.id)
 
             if (existingCourse != null) {
                 // 기존 데이터가 있으면 업데이트
-                val updatedCourse = existingCourse.copy(useCount = existingCourse.useCount + useCount)
+                val updatedCourse = existingCourse.copy(usageCount = existingCourse.usageCount + usageCount)
                 popularCourseRepository.save(updatedCourse)
             } else {
                 // 기존 데이터가 없으면 새로 생성
                 val newCourse = PopularCourse(
                     date = targetDate,
                     courseId = course.id,
-                    useCount = useCount
+                    usageCount = usageCount
                 )
                 popularCourseRepository.save(newCourse)
             }

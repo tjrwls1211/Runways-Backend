@@ -1,6 +1,5 @@
 package syntax.backend.runways.controller
 
-import jakarta.servlet.http.HttpServletResponse
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -13,12 +12,13 @@ import syntax.backend.runways.dto.UserProfileWithCoursesDTO
 import syntax.backend.runways.dto.UserRankingDTO
 import syntax.backend.runways.service.UserApiService
 import syntax.backend.runways.util.JwtUtil
+import syntax.backend.runways.util.SecurityUtil
 
 @RestController
 @RequestMapping("/api/user")
 class UserApiController(
     private val userApiService: UserApiService,
-    private val jwtUtil: JwtUtil
+    private val jwtUtil: JwtUtil,
 ) {
 
     /*
@@ -40,23 +40,23 @@ class UserApiController(
 
     // 사용자 정보 호출
     @GetMapping("/info")
-    fun getUserInfo(@RequestHeader("Authorization") token: String,
+    fun getUserInfo(
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int,
     ): ResponseEntity<ResponseMyInfoDTO> {
         val pageable = PageRequest.of(page, size)
-        val jwtToken = token.substring(7)
-        val userInfo = userApiService.getUserInfoFromToken(jwtToken, pageable)
+        val userId = SecurityUtil.getCurrentUserId()
+        val userInfo = userApiService.getUserInfoFromUserId(userId, pageable)
         return ResponseEntity.ok(userInfo)
     }
 
     // 아이디로 사용자 정보 호출
     @GetMapping("/info/{receiverId}")
-    fun getUserInfoFromId(@PathVariable receiverId : String, @RequestHeader("Authorization") token: String,
+    fun getUserInfoFromId(@PathVariable receiverId : String,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int,
     ): ResponseEntity<UserProfileWithCoursesDTO> {
-        val senderId = jwtUtil.extractUsername(token.substring(7))
+        val senderId = SecurityUtil.getCurrentUserId()
         val pageable = PageRequest.of(page, size)
         val userProfileWithCoursesDTO = userApiService.getUserInfoFromId(senderId, receiverId, pageable)
         return ResponseEntity.ok(userProfileWithCoursesDTO)
@@ -71,10 +71,9 @@ class UserApiController(
 
     // 사용자 정보 업데이트
     @PatchMapping("/update")
-    fun signUp(@RequestHeader("Authorization") token: String, @RequestBody requestUserInfoDTO: RequestUserInfoDTO): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        val result = userApiService.updateUserInfo(jwtToken, requestUserInfoDTO)
-        println("request")
+    fun signUp(@RequestBody requestUserInfoDTO: RequestUserInfoDTO): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        val result = userApiService.updateUserInfo(userId, requestUserInfoDTO)
         return when (result) {
             0 -> ResponseEntity.status(HttpStatus.FORBIDDEN).body("탈퇴한 지 7일 이내에는 다시 가입할 수 없습니다.")
             1, 2 -> ResponseEntity.status(HttpStatus.OK).body("사용자 정보 수정 성공")
@@ -95,43 +94,40 @@ class UserApiController(
 
     // 사용자 삭제
     @DeleteMapping("/delete")
-    fun deleteUser(@RequestHeader("Authorization") token: String): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        userApiService.deleteUser(jwtToken)
+    fun deleteUser(): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        userApiService.deleteUser(userId)
         return ResponseEntity.ok("사용자 삭제 성공")
     }
 
     // 디바이스 ID 등록
     @PatchMapping("/registerdevice")
-    fun registeredDeviceId(@RequestHeader("Authorization") token: String, @RequestParam deviceId:String): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        userApiService.registerDeviceId(jwtToken, deviceId)
+    fun registeredDeviceId(@RequestParam deviceId:String): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        userApiService.registerDeviceId(userId, deviceId)
         return ResponseEntity.ok("디바이스 ID 추가 성공")
     }
 
     // 팔로우 추가
     @PostMapping("/follow")
-    fun addFollower(@RequestHeader("Authorization") token: String, @RequestParam receiverId: String): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        val senderId = jwtUtil.extractUsername(jwtToken)
+    fun addFollower(@RequestParam receiverId: String): ResponseEntity<String> {
+        val senderId = SecurityUtil.getCurrentUserId()
         userApiService.addFollow(senderId, receiverId)
         return ResponseEntity.ok("팔로우 추가 성공")
     }
 
     // 팔로우 취소
     @DeleteMapping("/unfollow/{receiverId}")
-    fun removeFollower(@RequestHeader("Authorization") token: String, @PathVariable receiverId: String): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        val senderId = jwtUtil.extractUsername(jwtToken)
+    fun removeFollower(@PathVariable receiverId: String): ResponseEntity<String> {
+        val senderId = SecurityUtil.getCurrentUserId()
         userApiService.removeFollowing(senderId, receiverId)
         return ResponseEntity.ok("팔로우 삭제 성공")
     }
 
     // 팔로워 삭제
     @DeleteMapping("/unfollow/follower/{receiverId}")
-    fun removeFollowerBySenderId(@RequestHeader("Authorization") token: String, @PathVariable receiverId: String): ResponseEntity<String> {
-        val jwtToken = token.substring(7)
-        val senderId = jwtUtil.extractUsername(jwtToken)
+    fun removeFollowerBySenderId(@PathVariable receiverId: String): ResponseEntity<String> {
+        val senderId = SecurityUtil.getCurrentUserId()
         userApiService.removeFollower(senderId, receiverId)
         return ResponseEntity.ok("팔로워 삭제 성공")
     }

@@ -9,7 +9,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
-import syntax.backend.runways.repository.UserApiRepository
+import syntax.backend.runways.repository.UserRepository
 import syntax.backend.runways.service.LogService
 import syntax.backend.runways.util.JwtUtil
 import java.io.IOException
@@ -17,7 +17,7 @@ import java.io.IOException
 @Component
 class OAuth2LoginSuccessHandler(
     private val jwtUtil: JwtUtil,
-    private val userApiRepository: UserApiRepository,
+    private val userRepository: UserRepository,
     private val logService: LogService
 ) : AuthenticationSuccessHandler {
 
@@ -43,7 +43,7 @@ class OAuth2LoginSuccessHandler(
         SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(oAuth2User, null, authorities)
 
         // 사용자 정보 가져오기
-        val user = userApiRepository.findById(userId).orElseThrow { IllegalArgumentException("User not found") }
+        val user = userRepository.findById(userId).orElseThrow { IllegalArgumentException("User not found") }
 
         // nickname과 gender가 null인지 확인
         val userStatus = if (user.nickname.isNullOrEmpty() || user.gender.isNullOrEmpty()) 1 else 0

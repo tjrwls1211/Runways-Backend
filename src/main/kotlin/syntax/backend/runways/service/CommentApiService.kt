@@ -8,9 +8,9 @@ import syntax.backend.runways.dto.UpdateCommentDTO
 import java.util.*
 
 interface CommentApiService {
-    fun getParentCommentList(courseId: UUID, pageable:Pageable, token : String): Page<ResponseCommentDTO>
-    fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, token: String): ResponseCommentDTO
-    fun updateComment(updateCommentDTO: UpdateCommentDTO, token: String): String
-    fun deleteComment(commentId: UUID, token: String): String
-    fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, token : String): Page<ResponseCommentDTO>
+    fun getParentCommentList(courseId: UUID, pageable:Pageable, userId : String): Page<ResponseCommentDTO>
+    fun insertComment(requestInsertCommentDTO: RequestInsertCommentDTO, userId: String): ResponseCommentDTO
+    fun updateComment(updateCommentDTO: UpdateCommentDTO, userId: String): String
+    fun deleteComment(commentId: UUID, userId: String): String
+    fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO>
 }

@@ -15,14 +15,20 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
+import syntax.backend.runways.entity.ActionType
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
-import syntax.backend.runways.entity.User
-import syntax.backend.runways.repository.CommentApiRepository
-import syntax.backend.runways.repository.CourseApiRepository
+import syntax.backend.runways.entity.CourseTag
+import syntax.backend.runways.entity.TagLog
+import syntax.backend.runways.exception.NotAuthorException
+import syntax.backend.runways.repository.CommentRepository
+import syntax.backend.runways.repository.CourseRepository
+import syntax.backend.runways.repository.CourseTagRepository
 import syntax.backend.runways.repository.PopularCourseRepository
-import syntax.backend.runways.repository.RunningLogApiRepository
+import syntax.backend.runways.repository.RunningLogRepository
+import syntax.backend.runways.repository.TagLogRepository
+import syntax.backend.runways.repository.TagRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -30,20 +36,24 @@ import java.util.*
 
 @Service
 class CourseApiServiceImpl(
-    private val courseApiRepository: CourseApiRepository,
+    private val courseRepository: CourseRepository,
     private val userApiService: UserApiService,
     private val locationApiService: LocationApiService,
-    private val commentApiRepository: CommentApiRepository,
+    private val commentRepository: CommentRepository,
     private val courseQueryService: CourseQueryService,
-    private val runningLogApiRepository: RunningLogApiRepository,
+    private val runningLogRepository: RunningLogRepository,
     private val popularCourseRepository: PopularCourseRepository,
+    private val courseTagRepository : CourseTagRepository,
+    private val tagRepository: TagRepository,
+    private val tagLogRepository: TagLogRepository,
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
+    private val wktReader = WKTReader()
+    private val objectMapper = ObjectMapper()
 
     // 좌표 추출
     private fun extractCoordinates(position: String): Pair<Double, Double> {
-        val objectMapper = ObjectMapper()
         val node = objectMapper.readTree(position)
         val coordinates = node.get("coordinates")
         val x = coordinates.get(0).asDouble()
@@ -61,25 +71,25 @@ class CourseApiServiceImpl(
 
     // 코스 데이터 호출
     override fun getCourseData(courseId: UUID): Course {
-        val courseData = courseApiRepository.findById(courseId).orElse(null) ?: throw Exception("코스를 찾을 수 없습니다.")
+        val courseData = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         return courseData
     }
 
     // 댓글 개수 호출
-    private fun getCommentCount(courseId: UUID): Long {
+    private fun getCommentCount(courseId: UUID): Int {
         val commentStatus = CommentStatus.PUBLIC
-        return commentApiRepository.countByPostId_IdAndStatus(courseId, commentStatus)
+        return commentRepository.countByPostId_IdAndStatus(courseId, commentStatus)
     }
 
     // 코스 생성
-    override fun createCourse(requestCourseDTO: RequestCourseDTO, token: String) {
-        val user = userApiService.getUserDataFromToken(token)
-        val wktReader = WKTReader()
+    override fun createCourse(requestCourseDTO: RequestCourseDTO, userId: String) : UUID {
+        val user = userApiService.getUserDataFromId(userId)
 
         // WKT 문자열을 Geometry 객체로 변환
         val position = wktReader.read(requestCourseDTO.position) // Point
         val coordinate = wktReader.read(requestCourseDTO.coordinate) // LineString
 
+        // 유효성 검사
         if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
@@ -92,13 +102,32 @@ class CourseApiServiceImpl(
             coordinate = coordinate as LineString,
             mapUrl = requestCourseDTO.mapUrl,
             status = requestCourseDTO.status,
+            usageCount = 1,
         )
-        courseApiRepository.save(newCourse)
+        courseRepository.save(newCourse)
+
+        // 태그 ID를 기반으로 CourseTag 및 TagLog 생성
+        val tags = tagRepository.findAllById(requestCourseDTO.tag).map { tag ->
+            tag.apply {
+                usageCount += 1 // 태그 사용 횟수 증가
+            }
+        }
+
+        // 코스 태그 및 태그 로그 생성
+        val courseTags = tags.map { tag -> CourseTag(course = newCourse, tag = tag) }
+        val tagLogs = tags.map { tag -> TagLog(tag = tag, user = user, actionType = ActionType.USED) }
+
+        // 태그, 태그 로그, 코스 태그를 한 번에 저장
+        tagRepository.saveAll(tags)
+        tagLogRepository.saveAll(tagLogs)
+        courseTagRepository.saveAll(courseTags)
+
+        return newCourse.id
     }
 
     // 마이페이지 코스 리스트
-    override fun getMyCourseList(maker: User, pageable: Pageable): Page<ResponseCourseDTO> {
-        return courseQueryService.getCourseList(maker.id, pageable, false)
+    override fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+        return courseQueryService.getCourseList(userId, pageable, false)
     }
 
     // 공개 코스 조회
@@ -107,21 +136,21 @@ class CourseApiServiceImpl(
     }
 
     // 코스 업데이트
-    override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, token: String): String {
-        val courseData =
-            courseApiRepository.findById(requestUpdateCourseDTO.courseId).orElse(null) ?: throw EntityNotFoundException(
-                "코스를 찾을 수 없습니다."
-            )
-        val user = userApiService.getUserDataFromToken(token)
+    @Transactional
+    override fun updateCourse(requestUpdateCourseDTO: RequestUpdateCourseDTO, userId : String): UUID {
+        val courseData = courseRepository.findById(requestUpdateCourseDTO.courseId)
+            .orElseThrow { EntityNotFoundException("코스를 찾을 수 없습니다.") }
 
-        if (courseData.maker.id != user.id) {
-            return "코스 제작자가 아닙니다."
+        // 코스 제작자 확인
+        if (courseData.maker.id != userId) {
+            throw NotAuthorException("코스 제작자가 아닙니다.")
         }
 
-        val wktReader = WKTReader()
+        // WKT 문자열을 Geometry 객체로 변환
         val position = wktReader.read(requestUpdateCourseDTO.position) // Point
         val coordinate = wktReader.read(requestUpdateCourseDTO.coordinate) // LineString
 
+        // 유효성 검사
         if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
@@ -134,32 +163,66 @@ class CourseApiServiceImpl(
         courseData.status = requestUpdateCourseDTO.status
         courseData.updatedAt = LocalDateTime.now()
 
-        courseApiRepository.save(courseData)
+        courseRepository.save(courseData)
 
-        return "코스 업데이트 성공"
+        // 기존 태그와 요청된 태그 비교
+        val existingTags = courseData.courseTags.map { it.tag.id }
+        val newTags = requestUpdateCourseDTO.tag
+
+        // 추가해야 할 태그
+        val tagsToAdd = newTags.filterNot { it in existingTags }.distinct()
+        val tagsToAddEntities = tagRepository.findAllById(tagsToAdd).map { tag ->
+            tag.apply { usageCount += 1 } // 태그 사용 횟수 증가
+        }
+        val courseTagsToAdd = tagsToAddEntities.map { tag -> CourseTag(course = courseData, tag = tag) }
+        val tagLogsToAdd = tagsToAddEntities.map { tag ->
+            TagLog(tag = tag, user = courseData.maker, actionType = ActionType.USED) // 태그 로그 생성
+        }
+        courseTagRepository.saveAll(courseTagsToAdd) // 코스 태그 저장
+        tagLogRepository.saveAll(tagLogsToAdd) // 태그 로그 저장
+        tagRepository.saveAll(tagsToAddEntities) // 태그 저장
+
+        // 삭제해야 할 태그
+        val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
+        val tagsToRemoveEntities = tagRepository.findAllById(tagsToRemove).map { tag ->
+            tag.apply { usageCount -= 1 } // 태그 사용 횟수 감소
+        }
+        courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove) // 코스 태그 삭제
+        tagRepository.saveAll(tagsToRemoveEntities) // 태그 저장
+
+        return courseData.id
     }
 
     // 코스 상세정보
-    override fun getCourseById(courseId: UUID, token: String): ResponseCourseDetailDTO {
-        val optCourseData = courseApiRepository.findByIdWithTags(courseId)
+    override fun getCourseById(courseId: UUID, userId: String): ResponseCourseDetailDTO {
+        val optCourseData = courseRepository.findByIdWithTags(courseId)
         val commentCount = getCommentCount(courseId)
 
+        // 코스 데이터가 존재하는지 확인
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
-            val user = userApiService.getUserDataFromToken(token)
-            val isBookmarked = course.bookmark.isBookmarked(user.id)
 
+            // 북마크 여부 확인
+            val isBookmarked = course.bookmark.isBookmarked(userId)
+
+            // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             return ResponseCourseDetailDTO(
                 id = course.id,
@@ -173,29 +236,30 @@ class CourseApiServiceImpl(
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
-                author = course.maker.id == user.id,
+                author = course.maker.id == userId,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,
+                usageCount = course.usageCount
             )
         } else {
-            throw Exception("코스를 찾을 수 없습니다.")
+            throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         }
     }
 
     // 코스 삭제
-    override fun deleteCourse(courseId: UUID, token: String): String {
-        val optCourseData = courseApiRepository.findById(courseId)
+    override fun deleteCourse(courseId: UUID, userId: String): String {
+        val optCourseData = courseRepository.findById(courseId)
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
-            val user = userApiService.getUserDataFromToken(token)
-            if (course.maker.id != user.id) {
-                return "코스 제작자가 아닙니다."
+            if (course.maker.id != userId) {
+                throw NotAuthorException("코스 제작자가 아닙니다.")
             }
+            // 코스 상태 변경 -> 삭제 상태
             course.status = CourseStatus.DELETED
-            courseApiRepository.save(course)
+            courseRepository.save(course)
             return "코스 삭제 성공"
         } else {
             return "코스를 찾을 수 없습니다."
@@ -203,64 +267,66 @@ class CourseApiServiceImpl(
     }
 
     // 북마크 추가
-    override fun addBookmark(courseId: UUID, token: String): String {
-        val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
-        val user = userApiService.getUserDataFromToken(token)
+    override fun addBookmark(courseId: UUID, userId:String): String {
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
 
-        if (course.maker.id == user.id) {
+        if (course.maker.id == userId) {
             return "자신의 코스는 북마크할 수 없습니다."
         }
 
-        course.bookmark.addBookMark(user.id)
-        courseApiRepository.save(course)
+        course.bookmark.addBookMark(userId)
+        courseRepository.save(course)
 
         return "북마크 추가 성공"
     }
 
     // 북마크 삭제
-    override fun removeBookmark(courseId: UUID, token: String): String {
-        val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
-        val user = userApiService.getUserDataFromToken(token)
+    override fun removeBookmark(courseId: UUID, userId:String): String {
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
 
-        if (course.maker.id == user.id) {
+        if (course.maker.id == userId) {
             return "자신의 코스는 북마크할 수 없습니다."
         }
 
-        course.bookmark.removeBookMark(user.id)
-        courseApiRepository.save(course)
+        course.bookmark.removeBookMark(userId)
+        courseRepository.save(course)
 
         return "북마크 삭제 성공"
     }
 
     // 전체 코스 리스트
-    override fun getAllCourses(token: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getAllCourses(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
 
         // 코스 ID 조회
-        val courseIdsPage = courseApiRepository.findCourseIdsByStatus(statuses, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByStatus(statuses, pageable)
         val courseIds = courseIdsPage.content
 
         // 코스 데이터 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
-        val maker = userApiService.getUserDataFromToken(token)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
         // ResponseCourseDTO로 매핑
         val responseCourses = courses.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             ResponseCourseDTO(
                 id = course.id,
@@ -274,12 +340,13 @@ class CourseApiServiceImpl(
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
-                author = course.maker.id == maker.id,
+                author = course.maker.id == userId,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,
+                usageCount = course.usageCount,
             )
         }
 
@@ -288,32 +355,38 @@ class CourseApiServiceImpl(
     }
 
     // 코스 검색
-    override fun searchCoursesByTitle(title: String, token: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun searchCoursesByTitle(title: String, userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
         val statuses = CourseStatus.PUBLIC
 
         // 코스 ID 조회
-        val courseIdsPage = courseApiRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
         val courseIds = courseIdsPage.content
 
         // 코스 데이터 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
-        val maker = userApiService.getUserDataFromToken(token)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
         // ResponseCourseDTO로 매핑
         val responseCourses = courses.map { course ->
             val geoJsonPosition = geoJsonWriter.write(course.position)
             val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
 
+            // CRS 필드를 제거
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
+            // 좌표 추출
             val (x, y) = extractCoordinates(geoJsonPosition)
 
+            // 위치 정보 조회
             val location = locationApiService.getNearestLocation(x, y)
             val sido = location?.sido ?: "Unknown"
             val sigungu = location?.sigungu ?: "Unknown"
 
+            // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
 
             ResponseCourseDTO(
                 id = course.id,
@@ -327,12 +400,13 @@ class CourseApiServiceImpl(
                 mapUrl = course.mapUrl,
                 createdAt = course.createdAt,
                 updatedAt = course.updatedAt,
-                author = course.maker.id == maker.id,
+                author = course.maker.id == userId,
                 status = course.status,
-                tag = course.courseTags.map { it.tag.name },
+                tag = tags,
                 sido = sido,
                 sigungu = sigungu,
                 commentCount = commentCount,
+                usageCount = course.usageCount,
             )
         }
 
@@ -343,28 +417,26 @@ class CourseApiServiceImpl(
     // 코스 조회수 증가
     @Transactional
     override fun increaseHits(courseId: UUID): String {
-        val course =
-            courseApiRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
         course.hits.increaseHits()
         println(course.hits)
-        courseApiRepository.save(course)
+        courseRepository.save(course)
         return "조회수 증가 성공"
     }
 
     // 최근 사용 코스 조회
-    override fun getRecentCourses(token: String): ResponseRecommendCourseDTO? {
-        val userId = userApiService.getUserDataFromToken(token).id
+    override fun getRecentCourses(userId: String): ResponseRecommendCourseDTO? {
         val pageable = PageRequest.of(0, 10)
 
         // RunningLog에서 코스 ID만 조회
-        val runningLogPage = runningLogApiRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
+        val runningLogPage = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
         val courseIdCountMap = runningLogPage.groupingBy { it.course.id }.eachCount() // 코스별 이용 횟수 집계
 
         // courseIds를 courseIdCountMap 키로 생성
         val courseIds = courseIdCountMap.keys.toList()
 
         // 코스 정보를 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = courses.map { course ->
@@ -384,7 +456,7 @@ class CourseApiServiceImpl(
                 sido = sido,
                 sigungu = sigungu,
                 tags = course.courseTags.map { it.tag.name },
-                useCount = courseIdCountMap[course.id] ?: 0
+                usageCount = courseIdCountMap[course.id] ?: 0
             )
         }
 
@@ -415,19 +487,21 @@ class CourseApiServiceImpl(
         val courseIds = popularCourses.map { it.courseId }
 
         // 코스 데이터 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val courseMap = courses.associateBy { it.id }
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = popularCourses
-            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .sortedByDescending { it.usageCount } // usageCount 기준 내림차순 정렬
             .map { popularCourse ->
                 val course = courseMap[popularCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
 
+                // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
                 val geoJsonPosition = geoJsonWriter.write(course.position)
                 val (x, y) = extractCoordinates(geoJsonPosition)
 
+                // 위치 정보 조회
                 val location = locationApiService.getNearestLocation(x, y)
                 val sido = location?.sido ?: "Unknown"
                 val sigungu = location?.sigungu ?: "Unknown"
@@ -440,7 +514,7 @@ class CourseApiServiceImpl(
                     sido = sido,
                     sigungu = sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    useCount = popularCourse.useCount
+                    usageCount = popularCourse.usageCount
                 )
             }
 
@@ -471,19 +545,21 @@ class CourseApiServiceImpl(
         val courseIds = risingCourses.map { it.courseId }
 
         // 코스 데이터 한 번에 조회
-        val courses = courseApiRepository.findCoursesWithTagsByIds(courseIds)
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
         val courseMap = courses.associateBy { it.id }
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = risingCourses
-            .sortedByDescending { it.useCount } // useCount 기준 내림차순 정렬
+            .sortedByDescending { it.usageCount } // usageCount 기준 내림차순 정렬
             .map { risingCourse ->
                 val course = courseMap[risingCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
 
+                // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
                 val geoJsonPosition = geoJsonWriter.write(course.position)
                 val (x, y) = extractCoordinates(geoJsonPosition)
 
+                // 위치 정보 조회
                 val location = locationApiService.getNearestLocation(x, y)
                 val sido = location?.sido ?: "Unknown"
                 val sigungu = location?.sigungu ?: "Unknown"
@@ -496,7 +572,7 @@ class CourseApiServiceImpl(
                     sido = sido,
                     sigungu = sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    useCount = risingCourse.useCount
+                    usageCount = risingCourse.usageCount
                 )
             }
 
@@ -506,8 +582,9 @@ class CourseApiServiceImpl(
         )
     }
 
-    override fun createCourseByLLM(question: String, token: String): Map<String, Any> {
-        val user = userApiService.getUserDataFromToken(token)
+    // LLM 서버에 요청하여 코스 생성
+    override fun createCourseByLLM(question: String, userId: String): Map<String, Any> {
+        val user = userApiService.getUserDataFromId(userId)
 
         // LLM 서버 URL
         val url = "http://127.0.0.1:8000/api/recommend"
@@ -542,12 +619,84 @@ class CourseApiServiceImpl(
     }
 
     // 추천 코스 리스트
-    override fun getCombinedRecommendCourses(token: String): List<ResponseRecommendCourseDTO> {
-        val recentCourse = getRecentCourses(token)
+    override fun getCombinedRecommendCourses(userId: String): List<ResponseRecommendCourseDTO> {
+        val recentCourse = getRecentCourses(userId)
         val popularCourse = getPopularCourses()
         val risingCourse = getRisingCourse()
 
         // 필요한 코스 데이터를 리스트로 추가
         return listOfNotNull(recentCourse, popularCourse, risingCourse)
+    }
+
+    // 태그로 코스 검색
+    override fun searchCoursesByTag(tagName: String, userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+        // 태그 이름으로 태그 ID 조회
+        val tag = tagRepository.findByName(tagName)
+            ?: throw EntityNotFoundException("태그를 찾을 수 없습니다: $tagName")
+
+        // 코스 ID만 조회 usageCount 기준 정렬하고 페이징
+        val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, pageable)
+        val courseIds = courseIdsPage.content
+
+        // Fetch Join으로 코스와 관련 데이터를 한 번에 조회
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
+
+        // `user` 객체를 한 번만 조회
+        val user = userApiService.getUserDataFromId(userId)
+
+        // ID 순서를 유지하도록 수동 정렬
+        val sortedCourses = courseIds.mapNotNull { id -> courses.find { it.id == id } }
+
+        val responseCourses = sortedCourses.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            // CRS 필드를 제거
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
+
+            // 좌표 추출
+            val (x, y) = extractCoordinates(geoJsonPosition)
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            // 댓글 개수 조회
+            val commentCount = getCommentCount(course.id)
+
+            // List<Tag> 형태로 변환
+            val tags = course.courseTags.map { it.tag }
+
+            ResponseCourseDTO(
+                id = course.id,
+                title = course.title,
+                maker = course.maker,
+                bookmark = course.bookmark,
+                hits = course.hits,
+                distance = course.distance,
+                position = positionNode,
+                coordinate = coordinateNode,
+                mapUrl = course.mapUrl,
+                createdAt = course.createdAt,
+                updatedAt = course.updatedAt,
+                author = course.maker.id == user.id,
+                status = course.status,
+                tag = tags,
+                sido = sido,
+                sigungu = sigungu,
+                commentCount = commentCount,
+                usageCount = course.usageCount
+            )
+        }
+
+        // 태그 로그 생성
+        val tagLog = TagLog(
+            tag = tag,
+            user = user,
+            actionType = ActionType.SEARCHED
+        )
+        tagLogRepository.save(tagLog)
+
+        return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
 }
