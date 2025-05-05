@@ -24,9 +24,6 @@ data class UserRanking(
     @Column(nullable = false)
     var score: Int = 0,
 
-    @Column(nullable = true)
-    var rank: Int? = null,
-
     @Column(nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
