@@ -46,6 +46,7 @@ class CourseApiServiceImpl(
     private val courseTagRepository : CourseTagRepository,
     private val tagRepository: TagRepository,
     private val tagLogRepository: TagLogRepository,
+    private val experienceService: ExperienceService
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -82,6 +83,7 @@ class CourseApiServiceImpl(
     }
 
     // 코스 생성
+    @Transactional
     override fun createCourse(requestCourseDTO: RequestCourseDTO, userId: String) : UUID {
         val user = userApiService.getUserDataFromId(userId)
 
@@ -121,6 +123,9 @@ class CourseApiServiceImpl(
         tagRepository.saveAll(tags)
         tagLogRepository.saveAll(tagLogs)
         courseTagRepository.saveAll(courseTags)
+
+        // 경험치 증가
+        experienceService.addExperience(user, 50)
 
         return newCourse.id
     }

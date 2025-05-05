@@ -11,7 +11,8 @@ import java.time.LocalTime
 @Service
 class AttendanceApiServiceImpl(
     private val attendanceRepository: AttendanceRepository,
-    private val userApiService: UserApiService
+    private val userApiService: UserApiService,
+    private val experienceService: ExperienceService
 ) : AttendanceApiService {
 
     // 출석체크
@@ -40,6 +41,10 @@ class AttendanceApiServiceImpl(
             courseTypePreference = attendanceDTO.courseTypePreference,
             date = targetDate
         )
+
+        // 경험치 추가
+        experienceService.addExperience(user, 10)
+
         attendanceRepository.save(attendance)
         return true
     }

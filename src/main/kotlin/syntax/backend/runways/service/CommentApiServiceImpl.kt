@@ -21,7 +21,8 @@ class CommentApiServiceImpl (
     private val courseApiService : CourseApiService,
     private val userApiService: UserApiService,
     private val expoPushNotificationService: ExpoPushNotificationService,
-    private val notificationApiService: NotificationApiService
+    private val notificationApiService: NotificationApiService,
+    private val experienceService : ExperienceService
 ) : CommentApiService {
 
     // 댓글 불러오기(답글 X)
@@ -86,6 +87,10 @@ class CommentApiServiceImpl (
             parent = parent,
             imageUrl = requestInsertCommentDTO.imageUrl
         )
+
+        // 경험치 추가: 부모 댓글이면 3, 대댓글이면 1
+        val experiencePoints = if (parent == null) 3 else 1
+        experienceService.addExperience(user, experiencePoints)
 
         // 댓글 저장
         commentRepository.save(newComment)
