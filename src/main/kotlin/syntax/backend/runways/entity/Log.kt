@@ -10,8 +10,8 @@ import jakarta.persistence.*
 @Table(name = "logs")
 data class Log(
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    val id: UUID? = null,
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID DEFAULT uuid_generate_v4()")
+    val id: UUID = UUID.randomUUID(),
 
     @Column(name = "createdAt", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

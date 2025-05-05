@@ -16,8 +16,8 @@ data class RunningLog(
     val user: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    val course: Course,
+    @JoinColumn(name = "course_id", nullable = true) // course_id를 nullable로 설정
+    val course: Course? = null, // course를 nullable로 설정
 
     @Column(name = "distance", nullable = false)
     val distance: Float, // 러닝 거리 (단위: km)
