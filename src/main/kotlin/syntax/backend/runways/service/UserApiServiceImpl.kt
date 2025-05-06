@@ -61,7 +61,7 @@ class UserApiServiceImpl(
                 marketing = userInfo.marketing,
                 accountPrivate = userInfo.accountPrivate,
                 courses = courseQueryService.getCourseList(userId, pageable, false),
-                experience = userInfo.experience * 0.1f,
+                experience = userInfo.experience
             )
         } else {
             throw EntityNotFoundException("User not found")
@@ -84,7 +84,7 @@ class UserApiServiceImpl(
             accountPrivate = user.accountPrivate,
             courses = courses,
             isFollow = isFollowing,
-            experience = user.experience * 0.1f,
+            experience = user.experience
         )
     }
 
@@ -298,7 +298,7 @@ class UserApiServiceImpl(
                 id = user.id,
                 nickname = if (user.accountPrivate) "비공개" else user.nickname,
                 profileImage = user.profileImageUrl,
-                experience = user.experience * 0.1f
+                experience = user.experience
             )
         }
     }

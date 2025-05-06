@@ -31,7 +31,7 @@ class UserRankingApiServiceImpl(
                 id = user.id,
                 profileImage = if (user.accountPrivate) null else user.profileImageUrl,
                 nickname = if (user.accountPrivate) "비공개" else user.nickname,
-                experience = ranking.score / 10f
+                experience = ranking.score
             )
         }
     }

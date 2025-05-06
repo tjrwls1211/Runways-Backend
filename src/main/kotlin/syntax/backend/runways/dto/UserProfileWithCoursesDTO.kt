@@ -10,5 +10,5 @@ data class UserProfileWithCoursesDTO(
     val follow: Follow?,
     val courses: Page<ResponseCourseDTO>,
     val isFollow: Boolean,
-    val experience : Float
+    val experience : Int
 )

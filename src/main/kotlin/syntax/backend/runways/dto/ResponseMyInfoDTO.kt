@@ -17,5 +17,5 @@ data class ResponseMyInfoDTO(
     val marketing: Boolean,
     val accountPrivate: Boolean,
     val courses: Page<ResponseCourseDTO>,
-    val experience: Float
+    val experience: Int
 )
