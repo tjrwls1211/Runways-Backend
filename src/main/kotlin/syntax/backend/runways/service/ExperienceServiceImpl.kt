@@ -2,6 +2,7 @@ package syntax.backend.runways.service
 
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
+import syntax.backend.runways.entity.Role
 import syntax.backend.runways.entity.Season
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.entity.UserRanking
@@ -24,10 +25,16 @@ class ExperienceServiceImpl(
         val currentSeason = findCurrentSeason(now)
             ?: throw EntityNotFoundException("최근 시즌이 존재하지 않습니다.")
 
+        // USER 권한을 가진 유저만 경험치를 추가하도록 제한
+        if (user.role == Role.ROLE_GUEST || user.role == Role.ROLE_ADMIN) {
+            return
+        }
+
         user.experience += experience
         user.updatedAt = LocalDateTime.now()
         userRepository.save(user)
 
+        // 시즌 랭킹에 경험치 추가
         val ranking = userRankingRepository
             .findByUserAndSeason(user, currentSeason)
             ?: userRankingRepository.save(
