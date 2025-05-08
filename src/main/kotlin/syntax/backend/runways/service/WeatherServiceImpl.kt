@@ -38,8 +38,13 @@ class WeatherServiceImpl(
             return objectMapper.readValue(cachedData, WeatherDataDTO::class.java)
         }
 
+        // 캐시 만료 시간 설정
+        val now = LocalDateTime.now()
+        val nextHour = now.plusHours(1).withMinute(10).withSecond(0).withNano(0)
+        val duration = java.time.Duration.between(now, nextHour).seconds
+
         val weatherData = getNowWeather(nx, ny)
-        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(weatherData), 1, TimeUnit.HOURS)
+        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(weatherData), duration, TimeUnit.HOURS)
         return weatherData
     }
 

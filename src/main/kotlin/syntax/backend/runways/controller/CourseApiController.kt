@@ -145,10 +145,10 @@ class CourseApiController(
     // 자동 코스 생성
     @PostMapping("/auto-generate")
     fun autoGenerateCourse(
-        @RequestParam("question") question: String
+        @RequestBody llmRequestDTO: LlmRequestDTO
     ): ResponseEntity<Map<String, Any>> {
         val userId = SecurityUtil.getCurrentUserId()
-        val result = courseApiService.createCourseByLLM(question, userId)
+        val result = courseApiService.createCourseByLLM(llmRequestDTO, userId)
         return ResponseEntity.ok(result)
     }
 
