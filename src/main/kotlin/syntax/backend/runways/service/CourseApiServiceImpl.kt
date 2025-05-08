@@ -46,6 +46,7 @@ class CourseApiServiceImpl(
     private val courseTagRepository : CourseTagRepository,
     private val tagRepository: TagRepository,
     private val tagLogRepository: TagLogRepository,
+    private val experienceService: ExperienceService
 ) : CourseApiService {
 
     private val geoJsonWriter = GeoJsonWriter()
@@ -82,6 +83,7 @@ class CourseApiServiceImpl(
     }
 
     // 코스 생성
+    @Transactional
     override fun createCourse(requestCourseDTO: RequestCourseDTO, userId: String) : UUID {
         val user = userApiService.getUserDataFromId(userId)
 
@@ -121,6 +123,9 @@ class CourseApiServiceImpl(
         tagRepository.saveAll(tags)
         tagLogRepository.saveAll(tagLogs)
         courseTagRepository.saveAll(courseTags)
+
+        // 경험치 증가
+        experienceService.addExperience(user, 50)
 
         return newCourse.id
     }
@@ -428,9 +433,14 @@ class CourseApiServiceImpl(
     override fun getRecentCourses(userId: String): ResponseRecommendCourseDTO? {
         val pageable = PageRequest.of(0, 10)
 
-        // RunningLog에서 코스 ID만 조회
+        // RunningLog에서 코스 ID만 조회 (course가 null인 경우 제외)
         val runningLogPage = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
-        val courseIdCountMap = runningLogPage.groupingBy { it.course.id }.eachCount() // 코스별 이용 횟수 집계
+            .filter { it.course != null }
+
+        // 코스 ID 개수 세기
+        val courseIdCountMap = runningLogPage
+            .groupingBy { it.course!!.id }
+            .eachCount()
 
         // courseIds를 courseIdCountMap 키로 생성
         val courseIds = courseIdCountMap.keys.toList()

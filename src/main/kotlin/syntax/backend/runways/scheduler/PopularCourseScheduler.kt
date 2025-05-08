@@ -31,14 +31,16 @@ class PopularCourseScheduler(
         val endTime = LocalDateTime.now()
         val startTime = endTime.minusHours(1)
 
-        // RunningLog에서 코스별 이용 횟수 집계
+        // RunningLog에서 코스별 이용 횟수 집계 (course가 null인 경우 제외)
         val runningLogs = runningLogRepository.findByEndTimeBetween(startTime, endTime)
+            .filter { it.course != null }
+
         if (runningLogs.isEmpty()) {
             println("RunningLog 데이터가 없습니다. startTime: $startTime, endTime: $endTime")
             return
         }
 
-        val courseIdCountMap = runningLogs.groupingBy { it.course.id }.eachCount()
+        val courseIdCountMap = runningLogs.groupingBy { it.course!!.id }.eachCount()
         if (courseIdCountMap.isEmpty()) {
             println("courseIdCountMap이 비어 있습니다.")
             return
