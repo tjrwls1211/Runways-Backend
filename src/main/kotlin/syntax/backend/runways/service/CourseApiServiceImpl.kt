@@ -7,6 +7,7 @@ import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -41,6 +42,9 @@ class CourseApiServiceImpl(
     private val locationApiService: LocationApiService,
     private val commentRepository: CommentRepository,
     private val courseQueryService: CourseQueryService,
+    private val weatherService : WeatherService,
+    private val tendencyApiService: TendencyApiService,
+    private val attendanceApiService: AttendanceApiService,
     private val runningLogRepository: RunningLogRepository,
     private val popularCourseRepository: PopularCourseRepository,
     private val courseTagRepository : CourseTagRepository,
@@ -48,6 +52,9 @@ class CourseApiServiceImpl(
     private val tagLogRepository: TagLogRepository,
     private val experienceService: ExperienceService
 ) : CourseApiService {
+
+    @Value("\${llm-server-url}")
+    private lateinit var llmServerUrl : String
 
     private val geoJsonWriter = GeoJsonWriter()
     private val wktReader = WKTReader()
@@ -593,20 +600,23 @@ class CourseApiServiceImpl(
     }
 
     // LLM 서버에 요청하여 코스 생성
-    override fun createCourseByLLM(question: String, userId: String): Map<String, Any> {
+    override fun createCourseByLLM(llmRequestDTO: LlmRequestDTO, userId: String): Map<String, Any> {
         val user = userApiService.getUserDataFromId(userId)
 
-        // LLM 서버 URL
-        val url = "http://127.0.0.1:8000/api/recommend"
+        val weather = weatherService.getWeatherByCity(llmRequestDTO.city, llmRequestDTO.nx, llmRequestDTO.ny)
+
+        val condition = attendanceApiService.getAttendance(userId)?.bodyState
+            ?: tendencyApiService.getTendency(userId)?.exerciseFrequency
+            ?: throw EntityNotFoundException("사용자 컨디션을 찾을 수 없습니다.")
 
         // 요청 데이터 생성
         val requestData = mapOf(
-            "question" to question,
-            "lon" to 126.9348964, // 사용자 위치 경도 (예시 값)
-            "lat" to 37.5157975,  // 사용자 위치 위도 (예시 값)
-            "weather" to "맑음",   // 날씨 정보 (예시 값)
-            "temperature" to 25,  // 온도 (예시 값)
-            "condition" to "좋음"  // 사용자 컨디션 (예시 값)
+            "question" to llmRequestDTO.request,
+            "lon" to llmRequestDTO.nx, // 사용자 위치 경도
+            "lat" to llmRequestDTO.ny,  // 사용자 위치 위도
+            "weather" to weather.sky,   // 날씨 정보
+            "temperature" to weather.temperature,  // 온도
+            "condition" to condition  // 사용자 컨디션
         )
 
         // RestTemplate 초기화
@@ -614,7 +624,7 @@ class CourseApiServiceImpl(
 
         return try {
             // LLM 서버로 POST 요청 보내기
-            val response = restTemplate.postForEntity(url, requestData, Map::class.java)
+            val response = restTemplate.postForEntity(llmServerUrl, requestData, Map::class.java)
 
             if (response.statusCode.is2xxSuccessful) {
                 // 응답 데이터 반환
