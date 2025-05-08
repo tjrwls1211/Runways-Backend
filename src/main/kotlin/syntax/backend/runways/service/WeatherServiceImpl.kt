@@ -1,17 +1,23 @@
 package syntax.backend.runways.service
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.WeatherDataDTO
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
 @Service
-class WeatherServiceImpl : WeatherService {
+class WeatherServiceImpl(
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val objectMapper: ObjectMapper
+) : WeatherService {
 
     @Value("\${api.key}")
     private lateinit var apiKey: String
@@ -23,6 +29,19 @@ class WeatherServiceImpl : WeatherService {
     private lateinit var apiNowUrl: String
 
     private val restTemplate = RestTemplate()
+
+    // Redis 캐시를 사용하여 날씨 데이터 저장 및 조회
+    override fun getWeatherByCity(city: String, nx: Double, ny: Double): WeatherDataDTO {
+        val cacheKey = "weather:city:$city"
+        val cachedData = redisTemplate.opsForValue().get(cacheKey)
+        if (cachedData != null) {
+            return objectMapper.readValue(cachedData, WeatherDataDTO::class.java)
+        }
+
+        val weatherData = getNowWeather(nx, ny)
+        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(weatherData), 1, TimeUnit.HOURS)
+        return weatherData
+    }
 
     override fun getNowWeather(nx: Double, ny: Double): WeatherDataDTO {
         // WGS84 좌표를 격자 좌표로 변환

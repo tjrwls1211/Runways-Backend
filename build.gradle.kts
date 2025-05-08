@@ -45,6 +45,7 @@ dependencies {
     implementation("org.locationtech.jts:jts-core:1.18.2")
     implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
     implementation("org.hibernate:hibernate-spatial:6.2.0.Final")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
