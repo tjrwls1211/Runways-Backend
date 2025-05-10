@@ -449,6 +449,10 @@ class CourseApiServiceImpl(
             .groupingBy { it.course!!.id }
             .eachCount()
 
+        if (courseIdCountMap.isEmpty()) {
+            return null
+        }
+
         // courseIds를 courseIdCountMap 키로 생성
         val courseIds = courseIdCountMap.keys.toList()
 
