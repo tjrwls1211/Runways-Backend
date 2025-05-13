@@ -14,23 +14,23 @@ class GlobalExceptionHandler {
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(e: Exception): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("오류 발생: ${e.message}")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("오류 발생")
     }
 
     @ExceptionHandler(UserNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleUserNotFoundException(e: UserNotFoundException): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("사용자를 찾을 수 없습니다: ${e.message}")
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("사용자를 찾을 수 없습니다")
     }
 
     @ExceptionHandler(EntityNotFoundException::class)
     fun handleEntityNotFoundException(ex: EntityNotFoundException, request: WebRequest): ResponseEntity<String> {
-        return ResponseEntity("요청한 엔티티를 찾을 수 없습니다: ${ex.message}", HttpStatus.NOT_FOUND)
+        return ResponseEntity("요청한 엔티티를 찾을 수 없습니다", HttpStatus.NOT_FOUND)
     }
 
     @ExceptionHandler(NotAuthorException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleNotAuthorException(e: NotAuthorException): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("생성자가 아닙니다: ${e.message}")
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("생성자가 아닙니다")
     }
 }

@@ -21,9 +21,8 @@ class SecurityConfig(private val jwtRequestFilter: JwtRequestFilter, private val
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             // 접근 권한 설정
             .authorizeHttpRequests {
-                it.requestMatchers("/","/oauth2/**", "/login/**","/api/user/validate").permitAll()
-                it.requestMatchers("/api/user/update", "/api/user/duplicatecheck")
-                    .hasAnyRole("ADMIN", "USER", "WITHDRAWAL", "GUEST")
+                it.requestMatchers("/","/oauth2/**", "/login/**","/api/user/validate","/ws/**","/app/**","/topic/**").permitAll()
+                it.requestMatchers("/api/user/update", "/api/user/duplicatecheck").hasAnyRole("ADMIN", "USER", "WITHDRAWAL", "GUEST")
                 it.anyRequest().hasAnyRole("ADMIN", "USER")
             }
             // oauth 로그인 설정
