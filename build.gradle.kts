@@ -47,6 +47,7 @@ dependencies {
     implementation("org.hibernate:hibernate-spatial:6.2.0.Final")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework.security:spring-security-messaging")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
