@@ -23,7 +23,7 @@ class JwtChannelInterceptor(
         val accessor = StompHeaderAccessor.wrap(message)
         val authHeader = accessor.getFirstNativeHeader("Authorization")
 
-        if (!authHeader.isNullOrBlank() && authHeader.startsWith("Bearer ")) {
+        if (!authHeader.isNullOrBlank() && authHeader.startsWith("Bearer ") && accessor.command == StompCommand.CONNECT) {
             val jwt = authHeader.removePrefix("Bearer ").trim()
 
             try {
@@ -32,11 +32,11 @@ class JwtChannelInterceptor(
                     val userDetails = userDetailsService.loadUserByUsername(username)
                     val auth = UsernamePasswordAuthenticationToken(userDetails, null, userDetails.authorities)
 
-                    // SecurityContext에 인증 정보 저장
                     SecurityContextHolder.getContext().authentication = auth
-
-                    // 필요한 경우 user 필드에도 저장
                     accessor.user = auth
+
+                    // 세션 속성에 사용자 ID 저장
+                    accessor.sessionAttributes?.set("userId", userDetails.username)
 
                     println("[JWT] 인증 정보 설정 완료: ${auth.name} (${accessor.command})")
                 }
@@ -51,5 +51,4 @@ class JwtChannelInterceptor(
 
         return message
     }
-
 }

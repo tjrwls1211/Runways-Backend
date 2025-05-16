@@ -1,14 +1,13 @@
 package syntax.backend.runways.controller
 
 import org.springframework.messaging.handler.annotation.MessageMapping
+import org.springframework.messaging.handler.annotation.Headers
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.messaging.simp.SimpMessagingTemplate
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Controller
 import syntax.backend.runways.dto.LlmRequestDTO
 import syntax.backend.runways.dto.StatusMessageDTO
 import syntax.backend.runways.service.CourseApiService
-
 
 @Controller
 class StatusStreamController(
@@ -18,35 +17,22 @@ class StatusStreamController(
 
     @MessageMapping("/status/course/generate")
     fun generateCourse(
-        llmRequestDTO: LlmRequestDTO
+        llmRequestDTO: LlmRequestDTO,
+        headerAccessor: SimpMessageHeaderAccessor
     ) {
+        // 세션 ID 가져오기
         val session = "/topic/status/${llmRequestDTO.statusSessionId}"
-        println("generateCourse 호출됨, sessionId: ${llmRequestDTO.statusSessionId}")
 
-        val auth = SecurityContextHolder.getContext().authentication
-        println("SecurityContextHolder authentication: $auth")
+        // 세션에서 사용자 ID 가져오기
+        val userId = headerAccessor.sessionAttributes?.get("userId") as? String
 
-        if (auth !is UsernamePasswordAuthenticationToken) {
-            println("인증 정보 없음 또는 타입 불일치")
-            messagingTemplate.convertAndSend(
-                session,
-                StatusMessageDTO("ERROR", "인증되지 않은 사용자입니다.", null)
-            )
+        if (userId == null) {
+            println("세션에 사용자 ID 없음")
+            messagingTemplate.convertAndSend(session, StatusMessageDTO("ERROR", "인증되지 않은 사용자입니다.", null))
             return
         }
 
-        if (auth.authorities.none { it.authority == "ROLE_USER" || it.authority == "ROLE_ADMIN" }) {
-            println("권한 부족: ROLE_USER 필요")
-            messagingTemplate.convertAndSend(
-                session,
-                StatusMessageDTO("ERROR", "USER 권한이 필요합니다.", null)
-            )
-            return
-        }
-
-        val userId = auth.name
         println("사용자 인증 완료: $userId")
-
         messagingTemplate.convertAndSend(session, StatusMessageDTO("RECEIVED", "요청을 접수했습니다", null))
 
         try {
@@ -63,11 +49,7 @@ class StatusStreamController(
 
         } catch (e: Exception) {
             e.printStackTrace()
-            messagingTemplate.convertAndSend(
-                session,
-                StatusMessageDTO("ERROR", "오류 발생: ${e.message}", null)
-            )
+            messagingTemplate.convertAndSend(session, StatusMessageDTO("ERROR", "오류 발생: ${e.message}", null))
         }
     }
-
 }
