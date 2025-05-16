@@ -33,14 +33,14 @@ class StatusStreamController(
         }
 
         println("사용자 인증 완료: $userId")
-        messagingTemplate.convertAndSend(session, StatusMessageDTO("RECEIVED", "요청을 접수했습니다", null))
+        messagingTemplate.convertAndSend(session, StatusMessageDTO("RECEIVED", "요청 준비 중...", null))
 
         try {
             println("프롬프트 생성 단계 진입")
-            messagingTemplate.convertAndSend(session, StatusMessageDTO("PROMPTING", "프롬프트 생성 중...", null))
+            messagingTemplate.convertAndSend(session, StatusMessageDTO("PROMPTING", "AI 서버에 요청을 보내는 중...", null))
 
             println("Ollama 요청 단계 진입")
-            messagingTemplate.convertAndSend(session, StatusMessageDTO("GENERATING", "AI 서버에 요청 중...", null))
+            messagingTemplate.convertAndSend(session, StatusMessageDTO("GENERATING", "AI 분석 및 처리 중...", null))
 
             val response = courseApiService.createCourseByLLM(llmRequestDTO, userId)
 
