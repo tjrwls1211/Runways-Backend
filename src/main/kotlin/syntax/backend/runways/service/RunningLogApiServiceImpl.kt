@@ -2,27 +2,42 @@ package syntax.backend.runways.service
 
 import jakarta.persistence.EntityNotFoundException
 import jakarta.transaction.Transactional
+import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.entity.RunningLog
+import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.RunningLogRepository
 import syntax.backend.runways.repository.UserRepository
 
+
 @Service
 class RunningLogApiServiceImpl (
     private val runningLogRepository: RunningLogRepository,
-    private val userRepository: UserRepository,
     private val courseRepository: CourseRepository,
-    private val experienceService: ExperienceService
+    private val experienceService: ExperienceService,
+    private val userRepository: UserRepository,
 ) : RunningLogApiService {
+
+    private val wktReader = WKTReader()
 
     // 러닝로그 저장
     @Transactional
-    override fun saveRunningLog(requestRunningLogDTO: RequestRunningLogDTO, userId: String): RunningLog {
-        val user = userRepository.findById(userId).orElseThrow { EntityNotFoundException("사용자를 찾을 수 없습니다. : $userId") }
+    override fun saveRunningLog(requestRunningLogDTO: RequestRunningLogDTO, user : User): RunningLog {
         val course = requestRunningLogDTO.courseId?.let {
             courseRepository.findById(it).orElseThrow { EntityNotFoundException("코스를 찾을 수 없습니다 : $it") }
+        }
+
+        // WKT 문자열을 Geometry 객체로 변환
+        val position = wktReader.read(requestRunningLogDTO.position) // Point
+        val coordinate = wktReader.read(requestRunningLogDTO.coordinate) // LineString
+
+        // 유효성 검사
+        if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
+            throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
         val runningLog = RunningLog(
@@ -30,7 +45,10 @@ class RunningLogApiServiceImpl (
             course = course,
             distance = requestRunningLogDTO.distance,
             duration = requestRunningLogDTO.duration,
-            speed = requestRunningLogDTO.speed,
+            avgSpeed = requestRunningLogDTO.avgSpeed,
+            maxSpeed = requestRunningLogDTO.maxSpeed,
+            position = position as Point,
+            coordinate = coordinate as LineString,
             startTime = requestRunningLogDTO.startTime,
             endTime = requestRunningLogDTO.endTime
         )

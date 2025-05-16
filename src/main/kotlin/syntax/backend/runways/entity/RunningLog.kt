@@ -1,6 +1,10 @@
 package syntax.backend.runways.entity
 
 import jakarta.persistence.*
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.Point
 import java.time.LocalDateTime
 import java.util.*
 
@@ -25,8 +29,17 @@ data class RunningLog(
     @Column(name = "duration", nullable = false)
     val duration: Long, // 러닝 시간 (단위: 초)
 
-    @Column(name = "speed", nullable = false)
-    val speed : Float = 0.0f, // 평균 속도 (단위: km/h)
+    @Column(name = "avg_speed", nullable = false)
+    val avgSpeed: Float = 0.0f, // 평균 속도 (단위: km/h)
+
+    @Column(name = "max_speed", nullable = false)
+    val maxSpeed: Float = 0.0f, // 최고 속도 (단위: km/h)
+
+    @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
+    var position: Point = GeometryFactory().createPoint(Coordinate(0.0, 0.0)),
+
+    @Column(columnDefinition = "geometry(LineString, 4326)", nullable = false)
+    var coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
 
     @Column(name = "start_time", nullable = false)
     val startTime: LocalDateTime,

@@ -7,7 +7,10 @@ data class RequestRunningLogDTO(
     val courseId: UUID?,
     val distance: Float,
     val duration: Long,
-    val speed: Float,
+    val avgSpeed: Float,
+    val maxSpeed: Float,
+    val position: String,
+    val coordinate: String,
     val startTime: LocalDateTime,
     val endTime: LocalDateTime
 )
