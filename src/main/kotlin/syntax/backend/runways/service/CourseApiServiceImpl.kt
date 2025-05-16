@@ -8,13 +8,10 @@ import org.locationtech.jts.geom.Point
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpMethod
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -661,7 +658,6 @@ class CourseApiServiceImpl(
                     val responseBody = response.body as Map<*, *>
                     val courses = responseBody["data"] as? List<Map<String, Any>> ?: emptyList()
 
-                    println("courses : $courses")
                     return courses.map { data ->
                         val lon = (data["position"] as List<Double>)[0]
                         val lat = (data["position"] as List<Double>)[1]
@@ -672,7 +668,7 @@ class CourseApiServiceImpl(
                         val coordinates = data["coordinate"] as List<List<Double>>
                         val totalDistance = coordinates.zipWithNext { start, end ->
                             distanceUtil.haversine(start[1], start[0], end[1], end[0])
-                        }.sum()
+                        }.sum() / 100.0
 
                         val location = locationApiService.getNearestLocation(lon, lat)
                         val sido = location?.sido ?: "Unknown"
@@ -706,10 +702,6 @@ class CourseApiServiceImpl(
                 }
             } catch (e: Exception) {
                 if (attempt == 4) { // 마지막 시도에서 예외 발생 시
-                    messagingTemplate.convertAndSend(
-                        session,
-                        StatusMessageDTO("ERROR", "생성 중에 문제가 발생하였습니다.", null)
-                    )
                     throw RuntimeException("LLM 요청 중 오류 발생", e)
                 }
             }

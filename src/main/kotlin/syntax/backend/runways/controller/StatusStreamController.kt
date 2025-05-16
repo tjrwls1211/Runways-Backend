@@ -36,16 +36,19 @@ class StatusStreamController(
         messagingTemplate.convertAndSend(session, StatusMessageDTO("RECEIVED", "요청 준비 중...", null))
 
         try {
+            println("AI 서버에 요청 전송: ${llmRequestDTO.statusSessionId}")
             messagingTemplate.convertAndSend(session, StatusMessageDTO("PROMPTING", "AI 서버에 요청을 보내는 중...", null))
 
+            println("AI 서버에 요청 전송 완료: ${llmRequestDTO.statusSessionId}")
             messagingTemplate.convertAndSend(session, StatusMessageDTO("GENERATING", "AI 분석 및 처리 중...", null))
 
             val response = courseApiService.createCourseByLLM(llmRequestDTO, userId)
 
+            println("AI 서버 응답 수신 완료: ${llmRequestDTO.statusSessionId}")
             messagingTemplate.convertAndSend(session, StatusMessageDTO("COMPLETED", "코스 생성 완료!", response))
         } catch (e: Exception) {
             e.printStackTrace()
-            messagingTemplate.convertAndSend(session, StatusMessageDTO("ERROR", "오류 발생: ${e.message}", null))
+            messagingTemplate.convertAndSend(session, StatusMessageDTO("ERROR", "생성 중에 문제가 발생하였습니다.", null))
         }
     }
 }
