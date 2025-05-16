@@ -652,7 +652,7 @@ class CourseApiServiceImpl(
 
         val restTemplate = RestTemplate()
 
-        repeat(3) { attempt -> // 최대 3번 시도
+        repeat(5) { attempt -> // 최대 5번 시도
             try {
                 val response = restTemplate.postForEntity(llmServerUrl, requestData, Map::class.java)
 
@@ -705,16 +705,17 @@ class CourseApiServiceImpl(
                     throw RuntimeException("LLM 요청 실패", e)
                 }
             } catch (e: Exception) {
-                if (attempt == 2) {
+                if (attempt == 4) { // 마지막 시도에서 예외 발생 시
                     messagingTemplate.convertAndSend(
                         session,
-                        StatusMessageDTO("ERROR", "AI 요청 중 오류 발생", null)
+                        StatusMessageDTO("ERROR", "생성 중에 문제가 발생하였습니다.", null)
                     )
                     throw RuntimeException("LLM 요청 중 오류 발생", e)
                 }
             }
         }
-        return emptyList()
+        // 모든 시도에서 실패한 경우
+       throw IllegalStateException("LLM 요청이 실패하여 코스를 생성할 수 없습니다.")
     }
 
     // 추천 코스 리스트
