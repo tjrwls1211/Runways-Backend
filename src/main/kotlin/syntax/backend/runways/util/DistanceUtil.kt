@@ -9,7 +9,7 @@ import kotlin.math.sqrt
 class DistanceUtil {
     // 두 지점 간의 거리 계산 (Haversine 공식)
     fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val R = 6371000.0 // 지구 반지름 (단위: 미터)
+        val r = 6371000.0 // 지구 반지름 (단위: 미터)
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
 
@@ -18,6 +18,6 @@ class DistanceUtil {
                 sin(dLon / 2).pow(2)
 
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return R * c
+        return r * c
     }
 }
