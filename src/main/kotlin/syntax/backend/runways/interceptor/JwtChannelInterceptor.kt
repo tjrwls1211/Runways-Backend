@@ -32,20 +32,13 @@ class JwtChannelInterceptor(
                     val userDetails = userDetailsService.loadUserByUsername(username)
                     val auth = UsernamePasswordAuthenticationToken(userDetails, null, userDetails.authorities)
 
-                    // Spring Security 인증 객체 설정
+                    // SecurityContext에 인증 정보 저장
                     SecurityContextHolder.getContext().authentication = auth
 
-                    // accessor.user 설정 (모든 명령에 대해)
+                    // 필요한 경우 user 필드에도 저장
                     accessor.user = auth
 
-                    // CONNECT일 때만 세션에 저장
-                    if (accessor.command == StompCommand.CONNECT) {
-                        accessor.sessionAttributes?.set("SPRING.SIMP_USER", auth)
-                        println("[CONNECT] 사용자 세션 설정 완료: ${auth.name}")
-                    }
-
-                    println("[JWT] 인증 정보 설정 완료: ${auth.name}")
-                    println("[${accessor.command}] 사용자 정보 등록 완료")
+                    println("[JWT] 인증 정보 설정 완료: ${auth.name} (${accessor.command})")
                 }
             } catch (e: ExpiredJwtException) {
                 println("[JWT] 토큰 만료: ${e.message}")
@@ -58,4 +51,5 @@ class JwtChannelInterceptor(
 
         return message
     }
+
 }
