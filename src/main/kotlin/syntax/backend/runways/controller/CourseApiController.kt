@@ -142,16 +142,6 @@ class CourseApiController(
         return ResponseEntity.ok(recommendedCourses)
     }
 
-    // 자동 코스 생성
-    @PostMapping("/auto-generate")
-    fun autoGenerateCourse(
-        @RequestBody llmRequestDTO: LlmRequestDTO
-    ): ResponseEntity<Map<String, Any>> {
-        val userId = SecurityUtil.getCurrentUserId()
-        val result = courseApiService.createCourseByLLM(llmRequestDTO, userId)
-        return ResponseEntity.ok(result)
-    }
-
     // 태그로 코스 검색
     @GetMapping("/search/tag/{tagName}")
     fun searchCoursesByTag(

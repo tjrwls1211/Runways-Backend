@@ -45,6 +45,7 @@ class TagApiServiceImpl(
         return tagLogRepository.findWeightedTagsByUser(user.id)
             .map {
                 RecommendTagDTO(
+                    id = it.getId(),
                     name = it.getName(),
                     score = it.getScore(),
                     lastUsed = it.getLastUsed()
