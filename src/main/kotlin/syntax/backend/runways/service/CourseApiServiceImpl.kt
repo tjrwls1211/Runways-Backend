@@ -656,8 +656,7 @@ class CourseApiServiceImpl(
             try {
                 val response = restTemplate.postForEntity(llmServerUrl, requestData, Map::class.java)
 
-                println("LLM 서버 응답: ${response.body}")
-
+                // 응답 상태 코드 확인
                 if (response.statusCode.is2xxSuccessful) {
                     val responseBody = response.body as Map<*, *>
                     val courses = responseBody["data"] as? List<Map<String, Any>> ?: emptyList()
@@ -696,17 +695,16 @@ class CourseApiServiceImpl(
                     }
                 }
             } catch (e: HttpServerErrorException) {
+                // 서버 오류 처리
                 if (e.statusCode.is5xxServerError) {
                     messagingTemplate.convertAndSend(
                         session,
                         StatusMessageDTO("RETRY", "서버 오류 발생, 재시도 중...", null)
                     )
                 } else {
-                    println("LLM 요청 실패: ${e.statusCode}")
-                    throw RuntimeException("LLM 요청 실패: ${e.statusCode}", e)
+                    throw RuntimeException("LLM 요청 실패", e)
                 }
             } catch (e: Exception) {
-                println("LLM 요청 중 오류 발생: ${e.message}")
                 if (attempt == 2) {
                     messagingTemplate.convertAndSend(
                         session,
