@@ -5,13 +5,15 @@ import jakarta.transaction.Transactional
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestRunningLogDTO
+import syntax.backend.runways.dto.RunningLogDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.RunningLogRepository
-import syntax.backend.runways.repository.UserRepository
 
 
 @Service
@@ -19,7 +21,6 @@ class RunningLogApiServiceImpl (
     private val runningLogRepository: RunningLogRepository,
     private val courseRepository: CourseRepository,
     private val experienceService: ExperienceService,
-    private val userRepository: UserRepository,
 ) : RunningLogApiService {
 
     private val wktReader = WKTReader()
@@ -58,5 +59,10 @@ class RunningLogApiServiceImpl (
 
         // 러닝로그 저장
         return runningLogRepository.save(runningLog)
+    }
+
+    override fun getRunningLog(userId: String, pageable: Pageable): Page<RunningLogDTO> {
+        val runningLogs = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
+        return runningLogs.map { RunningLogDTO.from(it) }
     }
 }
