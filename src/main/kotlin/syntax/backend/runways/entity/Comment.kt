@@ -13,7 +13,7 @@ data class Comment(
 
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false, referencedColumnName = "id")
-    var postId: Course,
+    var post : Course,
 
     @Column(name = "content", nullable = false, columnDefinition = "text")
     val content: String,

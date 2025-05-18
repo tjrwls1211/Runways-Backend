@@ -82,7 +82,7 @@ class CommentApiServiceImpl (
         val newComment = Comment(
             content = requestInsertCommentDTO.content,
             author = user,
-            postId = courseData,
+            post = courseData,
             status = CommentStatus.PUBLIC,
             parent = parent,
             imageUrl = requestInsertCommentDTO.imageUrl

@@ -28,7 +28,7 @@ class CourseApiController(
     fun getCourseList(
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<PagedResponse<ResponseCourseDTO>> {
+    ): ResponseEntity<PagedResponse<ResponseMyCourseDTO>> {
         val pageable = PageRequest.of(page, size)
         val userId = SecurityUtil.getCurrentUserId()
         val courses = courseApiService.getMyCourseList(userId, pageable)

@@ -165,12 +165,12 @@ class CourseApiServiceImpl(
     }
 
     // 마이페이지 코스 리스트
-    override fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
         return courseQueryService.getCourseList(userId, pageable, false)
     }
 
     // 공개 코스 조회
-    override fun getCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getCourseList(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
         return courseQueryService.getCourseList(userId, pageable, true)
     }
 
