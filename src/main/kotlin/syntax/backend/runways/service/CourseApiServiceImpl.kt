@@ -668,7 +668,7 @@ class CourseApiServiceImpl(
                         val coordinates = data["coordinate"] as List<List<Double>>
                         val totalDistance = coordinates.zipWithNext { start, end ->
                             distanceUtil.haversine(start[1], start[0], end[1], end[0])
-                        }.sum() / 100.0
+                        }.sum() / 1000.0
 
                         val location = locationApiService.getNearestLocation(lon, lat)
                         val sido = location?.sido ?: "Unknown"
