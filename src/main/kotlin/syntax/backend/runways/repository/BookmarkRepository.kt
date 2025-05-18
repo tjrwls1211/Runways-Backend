@@ -20,7 +20,12 @@ interface BookmarkRepository : JpaRepository<Bookmark, Long> {
     ): List<UUID>
     @Query("SELECT b.course.id FROM Bookmark b WHERE b.user.id = :userId")
     fun findCourseIdsByUserId(@Param("userId") userId: String, pageable: Pageable): Page<UUID>
+    /*
+    // TODO : 정삳 작동 했다가 안됨
     @Query("SELECT b.course.id AS courseId, COUNT(b) AS bookmarkCount FROM Bookmark b WHERE b.course.id IN :courseIds GROUP BY b.course.id")
+    fun countBookmarksByCourseIds(@Param("courseIds") courseIds: List<UUID>): List<CourseBookmarkCount>
+     */
+    @Query("SELECT new syntax.backend.runways.dto.CourseBookmarkCount(b.course.id, COUNT(b)) FROM Bookmark b WHERE b.course.id IN :courseIds GROUP BY b.course.id")
     fun countBookmarksByCourseIds(@Param("courseIds") courseIds: List<UUID>): List<CourseBookmarkCount>
 }
 
