@@ -76,6 +76,28 @@ class CourseApiController(
         return ResponseEntity.ok(result)
     }
 
+    // 북마크한 코스 조회
+    @GetMapping("/bookmark/list")
+    fun getBookmarkedCourses(
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int
+    ): ResponseEntity<PagedResponse<ResponseCourseDTO>> {
+        val pageable = PageRequest.of(page, size)
+        val userId = SecurityUtil.getCurrentUserId()
+        val courses = courseApiService.getBookmarkedCourses(userId, pageable)
+
+        val pagedResponse = PagedResponse(
+            content = courses.content,
+            totalPages = courses.totalPages,
+            totalElements = courses.totalElements,
+            currentPage = courses.number,
+            pageSize = courses.size
+        )
+
+        return ResponseEntity.ok(pagedResponse)
+    }
+
+
     // 코스 전체 조회
     @GetMapping("/all")
     fun getAllCourses(

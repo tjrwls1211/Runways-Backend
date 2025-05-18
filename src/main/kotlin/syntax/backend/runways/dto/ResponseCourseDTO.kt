@@ -13,7 +13,7 @@ data class ResponseCourseDTO (
     val id: UUID,
     val title: String,
     val maker: User,
-    val bookmark: Bookmark,
+    val bookmark: Boolean,
     val hits: Hits?,
     val distance: Float,
     val position: ObjectNode?,

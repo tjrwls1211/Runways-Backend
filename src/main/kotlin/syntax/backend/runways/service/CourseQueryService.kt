@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.CourseStatus
+import syntax.backend.runways.repository.BookmarkRepository
 import syntax.backend.runways.repository.CommentRepository
 import syntax.backend.runways.repository.CourseRepository
 
@@ -17,7 +18,8 @@ import syntax.backend.runways.repository.CourseRepository
 class CourseQueryService(
     private val courseRepository: CourseRepository,
     private val locationApiService: LocationApiService,
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val bookmarkRepository: BookmarkRepository
 ) {
     private val geoJsonWriter = GeoJsonWriter()
 
@@ -34,9 +36,11 @@ class CourseQueryService(
         val courseIdsPage = courseRepository.findCourseIdsByMakerAndStatuses(userId, statuses, pageable)
         val courseIds = courseIdsPage.content
 
+        // 북마크된 courseIds 조회
+        val bookmarkedCourseIds = bookmarkRepository.findBookmarkedCourseIdsByUserIdAndCourseIds(userId, courseIds)
+
         // 코스 데이터 조회
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
-
 
         // ResponseCourseDTO로 매핑
         val responseCourses = courses.map { course ->
@@ -56,11 +60,14 @@ class CourseQueryService(
 
             val tags = course.courseTags.map { it.tag }
 
+            // 북마크 여부 확인
+            val isBookmarked = course.id in bookmarkedCourseIds
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
-                bookmark = course.bookmark,
+                bookmark = isBookmarked,
                 hits = course.hits,
                 position = positionNode,
                 coordinate = coordinateNode,
