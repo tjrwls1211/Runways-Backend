@@ -16,6 +16,6 @@ data class ResponseMyInfoDTO(
     val follow:Follow?,
     val marketing: Boolean,
     val accountPrivate: Boolean,
-    val courses: Page<ResponseCourseDTO>,
+    val courses: Page<ResponseMyCourseDTO>,
     val experience: Int
 )

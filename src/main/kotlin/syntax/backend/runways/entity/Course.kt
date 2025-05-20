@@ -26,9 +26,6 @@ data class Course(
     val maker: User,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    var bookmark: Bookmark = Bookmark(),
-
-    @JdbcTypeCode(SqlTypes.JSON)
     var hits: Hits = Hits(),
 
     @Column(name = "distance", nullable = false)

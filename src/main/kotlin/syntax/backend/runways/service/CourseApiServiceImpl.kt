@@ -19,6 +19,7 @@ import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.ActionType
+import syntax.backend.runways.entity.Bookmark
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
@@ -26,6 +27,7 @@ import syntax.backend.runways.entity.CourseTag
 import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.entity.TagLog
 import syntax.backend.runways.exception.NotAuthorException
+import syntax.backend.runways.repository.BookmarkRepository
 import syntax.backend.runways.repository.CommentRepository
 import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.CourseTagRepository
@@ -55,7 +57,8 @@ class CourseApiServiceImpl(
     private val tagRepository: TagRepository,
     private val tagLogRepository: TagLogRepository,
     private val experienceService: ExperienceService,
-    private val messagingTemplate: SimpMessagingTemplate
+    private val messagingTemplate: SimpMessagingTemplate,
+    private val bookmarkRepository: BookmarkRepository,
 ) : CourseApiService {
 
     @Value("\${llm-server-url}")
@@ -162,12 +165,12 @@ class CourseApiServiceImpl(
     }
 
     // 마이페이지 코스 리스트
-    override fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getMyCourseList(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
         return courseQueryService.getCourseList(userId, pageable, false)
     }
 
     // 공개 코스 조회
-    override fun getCourseList(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getCourseList(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
         return courseQueryService.getCourseList(userId, pageable, true)
     }
 
@@ -239,7 +242,7 @@ class CourseApiServiceImpl(
             val course = optCourseData.get()
 
             // 북마크 여부 확인
-            val isBookmarked = course.bookmark.isBookmarked(userId)
+            val isBookmarked = bookmarkRepository.existsByCourseIdAndUserId(courseId, userId)
 
             // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
             val geoJsonPosition = geoJsonWriter.write(course.position)
@@ -304,30 +307,102 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, userId:String): String {
-        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        val user = userApiService.getUserDataFromId(userId)
 
+        // 코스 제작자 확인
         if (course.maker.id == userId) {
             return "자신의 코스는 북마크할 수 없습니다."
         }
 
-        course.bookmark.addBookMark(userId)
-        courseRepository.save(course)
+        // 북마크 되어 있는지 확인
+        val isBookmark = bookmarkRepository.existsByCourseIdAndUserId(courseId, userId)
+
+        if (isBookmark) {
+            return "이미 북마크된 코스입니다."
+        }
+
+        // 북마크 추가
+        bookmarkRepository.save(Bookmark(course = course, user = user))
 
         return "북마크 추가 성공"
     }
 
     // 북마크 삭제
+    @Transactional
     override fun removeBookmark(courseId: UUID, userId:String): String {
-        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        if (!bookmarkRepository.existsByCourseIdAndUserId(courseId, userId))
+            throw EntityNotFoundException("북마크를 찾을 수 없습니다.")
 
-        if (course.maker.id == userId) {
-            return "자신의 코스는 북마크할 수 없습니다."
-        }
-
-        course.bookmark.removeBookMark(userId)
-        courseRepository.save(course)
+        bookmarkRepository.deleteByCourseIdAndUserId(courseId, userId)
 
         return "북마크 삭제 성공"
+    }
+
+    // 북마크된 코스 조회
+    @Transactional
+    override fun getBookmarkedCourses(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
+        // 북마크된 코스 ID 조회
+        val bookmarkedCourseIdsPage = bookmarkRepository.findCourseIdsByUserId(userId, pageable)
+        val bookmarkedCourseIds = bookmarkedCourseIdsPage.content
+
+        if (bookmarkedCourseIds.isEmpty()) {
+            return PageImpl(emptyList(), pageable, 0)
+        }
+
+        // 코스 데이터 조회
+        val courses = courseRepository.findCoursesWithTagsByIds(bookmarkedCourseIds)
+
+        // 북마크 수 조회
+        val bookmarkCounts = bookmarkRepository.countBookmarksByCourseIds(bookmarkedCourseIds)
+        val bookmarkCountMap = bookmarkCounts.associateBy({ it.courseId }, { it.bookmarkCount })
+
+        // ResponseCourseDTO로 매핑
+        val responseCourses = courses.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+            val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+            val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
+            val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
+
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            val commentCount = commentRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
+
+            val tags = course.courseTags.map { it.tag }
+
+            // 북마크 수 조회 (Long -> Int 변환)
+            val bookmarkCount = (bookmarkCountMap[course.id] ?: 0L).toInt()
+
+            ResponseMyCourseDTO(
+                id = course.id,
+                title = course.title,
+                maker = course.maker,
+                bookmark = true, // 북마크된 코스이므로 항상 true
+                bookmarkCount = bookmarkCount,
+                hits = course.hits,
+                position = positionNode,
+                coordinate = coordinateNode,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                createdAt = course.createdAt,
+                updatedAt = course.updatedAt,
+                author = course.maker.id == userId,
+                status = course.status,
+                tag = tags,
+                sido = sido,
+                sigungu = sigungu,
+                commentCount = commentCount,
+                usageCount = course.usageCount,
+            )
+        }
+
+        // 페이징 결과 반환
+        return PageImpl(responseCourses, pageable, bookmarkedCourseIdsPage.totalElements)
     }
 
     // 전체 코스 리스트
@@ -337,6 +412,9 @@ class CourseApiServiceImpl(
         // 코스 ID 조회
         val courseIdsPage = courseRepository.findCourseIdsByStatus(statuses, pageable)
         val courseIds = courseIdsPage.content
+
+        // 북마크된 courseIds 조회
+        val bookmarkedCourseIds = bookmarkRepository.findBookmarkedCourseIdsByUserIdAndCourseIds(userId, courseIds)
 
         // 코스 데이터 조회
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
@@ -364,11 +442,14 @@ class CourseApiServiceImpl(
             // List<Tag> 형태로 변환
             val tags = course.courseTags.map { it.tag }
 
+            // 북마크 여부 확인
+            val isBookmakred = course.id in bookmarkedCourseIds
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
-                bookmark = course.bookmark,
+                bookmark = isBookmakred,
                 hits = course.hits,
                 distance = course.distance,
                 position = positionNode,
@@ -398,6 +479,9 @@ class CourseApiServiceImpl(
         val courseIdsPage = courseRepository.findCourseIdsByTitleContainingAndStatus(title, statuses, pageable)
         val courseIds = courseIdsPage.content
 
+        // 북마크된 courseIds 조회
+        val bookmarkedCourseIds = bookmarkRepository.findBookmarkedCourseIdsByUserIdAndCourseIds(userId, courseIds)
+
         // 코스 데이터 조회
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
@@ -424,11 +508,14 @@ class CourseApiServiceImpl(
             // List<Tag> 형태로 변환
             val tags = course.courseTags.map { it.tag }
 
+            // 북마크 여부 확인
+            val isBookmakred = course.id in bookmarkedCourseIds
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
-                bookmark = course.bookmark,
+                bookmark = isBookmakred,
                 hits = course.hits,
                 distance = course.distance,
                 position = positionNode,
@@ -730,6 +817,9 @@ class CourseApiServiceImpl(
         val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, pageable)
         val courseIds = courseIdsPage.content
 
+        // 북마크된 courseIds 조회
+        val bookmarkedCourseIds = bookmarkRepository.findBookmarkedCourseIdsByUserIdAndCourseIds(userId, courseIds)
+
         // Fetch Join으로 코스와 관련 데이터를 한 번에 조회
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
@@ -759,11 +849,14 @@ class CourseApiServiceImpl(
             // List<Tag> 형태로 변환
             val tags = course.courseTags.map { it.tag }
 
+            // 북마크 여부 확인
+            val isBookmakred = course.id in bookmarkedCourseIds
+
             ResponseCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
-                bookmark = course.bookmark,
+                bookmark = isBookmakred,
                 hits = course.hits,
                 distance = course.distance,
                 position = positionNode,

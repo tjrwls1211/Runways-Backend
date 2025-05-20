@@ -9,7 +9,6 @@ import syntax.backend.runways.dto.UserRankingDTO
 import syntax.backend.runways.entity.Season
 import syntax.backend.runways.repository.SeasonRepository
 import syntax.backend.runways.repository.UserRankingRepository
-import syntax.backend.runways.repository.UserRepository
 import java.time.LocalDate
 
 @Service
