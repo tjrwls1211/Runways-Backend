@@ -81,7 +81,7 @@ class CourseApiController(
     fun getBookmarkedCourses(
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<PagedResponse<ResponseCourseDTO>> {
+    ): ResponseEntity<PagedResponse<ResponseMyCourseDTO>> {
         val pageable = PageRequest.of(page, size)
         val userId = SecurityUtil.getCurrentUserId()
         val courses = courseApiService.getBookmarkedCourses(userId, pageable)

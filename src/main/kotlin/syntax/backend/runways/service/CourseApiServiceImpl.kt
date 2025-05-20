@@ -341,7 +341,7 @@ class CourseApiServiceImpl(
 
     // 북마크된 코스 조회
     @Transactional
-    override fun getBookmarkedCourses(userId: String, pageable: Pageable): Page<ResponseCourseDTO> {
+    override fun getBookmarkedCourses(userId: String, pageable: Pageable): Page<ResponseMyCourseDTO> {
         // 북마크된 코스 ID 조회
         val bookmarkedCourseIdsPage = bookmarkRepository.findCourseIdsByUserId(userId, pageable)
         val bookmarkedCourseIds = bookmarkedCourseIdsPage.content
@@ -352,6 +352,10 @@ class CourseApiServiceImpl(
 
         // 코스 데이터 조회
         val courses = courseRepository.findCoursesWithTagsByIds(bookmarkedCourseIds)
+
+        // 북마크 수 조회
+        val bookmarkCounts = bookmarkRepository.countBookmarksByCourseIds(bookmarkedCourseIds)
+        val bookmarkCountMap = bookmarkCounts.associateBy({ it.courseId }, { it.bookmarkCount })
 
         // ResponseCourseDTO로 매핑
         val responseCourses = courses.map { course ->
@@ -371,11 +375,15 @@ class CourseApiServiceImpl(
 
             val tags = course.courseTags.map { it.tag }
 
-            ResponseCourseDTO(
+            // 북마크 수 조회 (Long -> Int 변환)
+            val bookmarkCount = (bookmarkCountMap[course.id] ?: 0L).toInt()
+
+            ResponseMyCourseDTO(
                 id = course.id,
                 title = course.title,
                 maker = course.maker,
                 bookmark = true, // 북마크된 코스이므로 항상 true
+                bookmarkCount = bookmarkCount,
                 hits = course.hits,
                 position = positionNode,
                 coordinate = coordinateNode,
