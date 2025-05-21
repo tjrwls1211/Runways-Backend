@@ -307,7 +307,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, userId:String): String {
-        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        val course = courseRepository.findByIdWithTags(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromId(userId)
 
         // 코스 제작자 확인
@@ -321,6 +321,13 @@ class CourseApiServiceImpl(
         if (isBookmark) {
             return "이미 북마크된 코스입니다."
         }
+
+        // 태그 로그 추가
+        val tags = course.courseTags.map { it.tag }
+        val tagLogs = tags.map { tag ->
+            TagLog(tag = tag, user = user, actionType = ActionType.BOOKMARKED)
+        }
+        tagLogRepository.saveAll(tagLogs)
 
         // 북마크 추가
         bookmarkRepository.save(Bookmark(course = course, user = user))

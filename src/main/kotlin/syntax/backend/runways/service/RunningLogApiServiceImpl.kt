@@ -56,9 +56,9 @@ class RunningLogApiServiceImpl (
         )
 
         // 코스가 있을 경우 사용 횟수 증가
-        if (requestRunningLogDTO.courseId != null) {
-            course!!.usageCount += 1
-            courseRepository.save(course)
+        course?.let {
+            it.usageCount += 1
+            courseRepository.save(it)
         }
 
         // 경험치 추가

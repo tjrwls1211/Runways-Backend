@@ -17,7 +17,7 @@ interface TagLogRepository : JpaRepository<TagLog, UUID> {
                 (
                     CASE
                         WHEN tl.action_type = 'USED' THEN 5
-                        WHEN tl.action_type = 'CLICKED' THEN 3
+                        WHEN tl.action_type = 'BOOKMARKED' THEN 3
                         WHEN tl.action_type = 'SEARCHED' THEN 2
                         ELSE 0
                     END
