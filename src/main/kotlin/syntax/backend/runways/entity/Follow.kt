@@ -24,4 +24,10 @@ data class Follow(
     fun isFollower(userId: String): Boolean {
         return followers.contains(userId)
     }
+    fun clearFollowings() {
+        followings.clear()
+    }
+    fun clearFollowers() {
+        followers.clear()
+    }
 }
