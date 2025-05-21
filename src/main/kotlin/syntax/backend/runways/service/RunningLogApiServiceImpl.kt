@@ -41,6 +41,7 @@ class RunningLogApiServiceImpl (
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
+        // 러닝로그 생성
         val runningLog = RunningLog(
             user = user,
             course = course,
@@ -53,6 +54,12 @@ class RunningLogApiServiceImpl (
             startTime = requestRunningLogDTO.startTime,
             endTime = requestRunningLogDTO.endTime
         )
+
+        // 코스가 있을 경우 사용 횟수 증가
+        if (requestRunningLogDTO.courseId != null) {
+            course!!.usageCount += 1
+            courseRepository.save(course)
+        }
 
         // 경험치 추가
         experienceService.addExperience(user, 30)
