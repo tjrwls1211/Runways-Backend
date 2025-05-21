@@ -10,14 +10,17 @@ import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.Role
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.UserRepository
+import syntax.backend.runways.repository.UserRankingRepository
 import syntax.backend.runways.util.JwtUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.text.get
 
 @Service
 class UserApiServiceImpl(
     private val userRepository: UserRepository,
+    private val userRankingRepository : UserRankingRepository,
     private val jwtUtil: JwtUtil,
     private val courseQueryService: CourseQueryService
 ) : UserApiService {
@@ -133,23 +136,54 @@ class UserApiServiceImpl(
     }
 
     // 사용자 삭제
+    @Transactional
     override fun deleteUser(userId: String) {
         val deleteUser = userRepository.findById(userId)
         if (deleteUser.isPresent) {
             val withdrawalUser = deleteUser.get()
+
+            // 팔로잉 제거
+            val followingIds = withdrawalUser.follow.followings
+            println("followingIds: $followingIds")
+            followingIds.forEach { followingId ->
+                val followingUser = userRepository.findById(followingId)
+                if (followingUser.isPresent) {
+                    followingUser.get().follow.removeFollower(userId)
+                    userRepository.save(followingUser.get())
+                }
+            }
+            withdrawalUser.follow.clearFollowings()
+            println("follow : ${withdrawalUser.follow}")
+
+            // 팔로워 제거
+            val followerIds = withdrawalUser.follow.followers
+            println("followerIds: $followerIds")
+            followerIds.forEach { followerId ->
+                val followerUser = userRepository.findById(followerId)
+                if (followerUser.isPresent) {
+                    followerUser.get().follow.removeFollowing(userId)
+                    userRepository.save(followerUser.get())
+                }
+            }
+            withdrawalUser.follow.clearFollowers()
+            println("follow : ${withdrawalUser.follow}")
+
             withdrawalUser.name = null
             withdrawalUser.birthdate = LocalDate.now()
             withdrawalUser.email = null
             withdrawalUser.platform = ""
             withdrawalUser.nickname = null
             withdrawalUser.gender = null
-            withdrawalUser.follow = Follow()
             withdrawalUser.role = Role.ROLE_WITHDRAWAL
             withdrawalUser.profileImageUrl = null
             withdrawalUser.updatedAt = LocalDateTime.now()
             withdrawalUser.marketing = false
             withdrawalUser.device = null
             userRepository.save(withdrawalUser)
+
+            // 랭킹 삭제
+            userRankingRepository.deleteByUserId(userId)
+
         } else {
             throw Exception("User not found")
         }

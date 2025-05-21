@@ -10,4 +10,5 @@ import syntax.backend.runways.entity.UserRanking
 interface UserRankingRepository : JpaRepository<UserRanking, Long> {
     fun findByUserAndSeason(user: User, season: Season): UserRanking?
     fun findBySeasonOrderByScoreDesc(season: Season, pageable: Pageable): Page<UserRanking>
+    fun deleteByUserId(userId: String): Int
 }
