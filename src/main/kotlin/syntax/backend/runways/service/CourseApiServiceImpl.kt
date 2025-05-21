@@ -810,6 +810,10 @@ class CourseApiServiceImpl(
         val popularCourse = getPopularCourses()
         val risingCourse = getRisingCourse()
 
+        println("recentCourse: $recentCourse")
+        println("popularCourse: $popularCourse")
+        println("risingCourse: $risingCourse")
+
         // 필요한 코스 데이터를 리스트로 추가
         return listOfNotNull(recentCourse, popularCourse, risingCourse)
     }

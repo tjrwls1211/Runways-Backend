@@ -83,14 +83,23 @@ class UserApiController(
 
     // 토큰 검증
     @GetMapping("/validate")
-    fun validateUserInfo(@RequestHeader("Authorization") token: String): ResponseEntity<String> {
+    fun validateUserInfo(@RequestHeader("Authorization", required = false) token: String?): ResponseEntity<String> {
+        if (token.isNullOrBlank() || !token.startsWith("Bearer ")) {
+            println("Authorization 헤더가 잘못되었거나 없음: $token")
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authorization 헤더가 유효하지 않습니다.")
+        }
+
         val jwtToken = token.substring(7)
         val isValid = jwtUtil.validateToken(jwtToken)
-        if (!isValid) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.")
+        return if (isValid) {
+            println("유효한 토큰입니다.: $token")
+            ResponseEntity.ok("사용자 정보가 유효합니다.")
+        } else {
+            println("유효하지 않은 토큰입니다.: $token")
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.")
         }
-        return ResponseEntity.ok("사용자 정보가 유효합니다.")
     }
+
 
     // 사용자 삭제
     @DeleteMapping("/delete")
