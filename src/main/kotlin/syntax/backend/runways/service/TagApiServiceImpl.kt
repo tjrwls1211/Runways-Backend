@@ -37,9 +37,9 @@ class TagApiServiceImpl(
         return tagRepository.findTop10ByOrderByUsageCountDesc()
     }
 
-    override fun getPersonalizedTags(token : String): List<RecommendTagDTO> {
+    override fun getPersonalizedTags(userId : String): List<RecommendTagDTO> {
         // JWT 토큰에서 사용자 ID 추출
-        val user = userApiService.getUserDataFromToken(token)
+        val user = userApiService.getUserDataFromId(userId)
 
         // 사용자 ID를 사용하여 태그 로그에서 가중치가 부여된 태그 조회
         return tagLogRepository.findWeightedTagsByUser(user.id)

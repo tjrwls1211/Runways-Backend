@@ -58,4 +58,13 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         ORDER BY c.usageCount DESC
     """)
     fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, pageable: Pageable): Page<UUID>
+
+    // 최근 코스 조회
+    @Query("""
+        SELECT c.id
+        FROM Course c
+        WHERE c.status = :status
+        ORDER BY c.createdAt DESC
+    """)
+    fun findTop10ByStatusOrderByCreatedAtDesc(status: CourseStatus): List<UUID>
 }

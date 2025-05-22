@@ -1,11 +1,13 @@
 package syntax.backend.runways.controller
 
+import com.google.api.client.util.SecurityUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RecommendTagDTO
 import syntax.backend.runways.dto.TagDTO
 import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.service.TagApiService
+import syntax.backend.runways.util.SecurityUtil
 
 @RestController
 @RequestMapping("/api/tag")
@@ -43,9 +45,9 @@ class TagApiController (
 
     // 사용자 맞춤형 태그 조회
     @GetMapping("/personalized")
-    fun getPersonalizedTags(@RequestHeader("Authorization") token: String): ResponseEntity<List<RecommendTagDTO>> {
-        val jwtToken = token.substring(7)
-        val personalizedTags = tagApiService.getPersonalizedTags(jwtToken)
+    fun getPersonalizedTags(): ResponseEntity<List<RecommendTagDTO>> {
+        val userId = SecurityUtil.getCurrentUserId()
+        val personalizedTags = tagApiService.getPersonalizedTags(userId)
         return ResponseEntity.ok(personalizedTags)
     }
 

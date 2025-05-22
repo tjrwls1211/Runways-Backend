@@ -54,6 +54,7 @@ class CourseApiServiceImpl(
     private val runningLogRepository: RunningLogRepository,
     private val popularCourseRepository: PopularCourseRepository,
     private val courseTagRepository : CourseTagRepository,
+    private val tagApiService: TagApiService,
     private val tagRepository: TagRepository,
     private val tagLogRepository: TagLogRepository,
     private val experienceService: ExperienceService,
@@ -804,18 +805,128 @@ class CourseApiServiceImpl(
        throw IllegalStateException("LLM 요청이 실패하여 코스를 생성할 수 없습니다.")
     }
 
+    // 사용자가 관심 있어하는 태그로 코스 조회
+    fun getUserInterestedTags(userId: String): ResponseRecommendCourseDTO? {
+        val interestTags = tagApiService.getPersonalizedTags(userId)
+            .sortedByDescending { it.score } // score 기준으로 정렬
+
+        // 상위 3개의 태그 추출
+        val topTags = interestTags.take(3)
+
+        // 태그가 없으면 null 반환
+        if (topTags.isEmpty()) return null
+
+        // 각 태그에 대해 최대 3개의 코스를 조회
+        val coursesByTags = topTags.flatMap { tag ->
+            searchCoursesByTag(tag.name, userId, PageRequest.of(0, 3)).content
+        }
+
+        // 코스 리스트를 섞음
+        val shuffledCourses = coursesByTags.shuffled()
+
+        // 섞인 코스를 CourseSummary로 매핑
+        val courseSummaries = shuffledCourses.map { course ->
+            CourseSummary(
+                id = course.id,
+                title = course.title,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                sido = course.sido,
+                sigungu = course.sigungu,
+                tags = course.tag.map { it.name },
+                usageCount = course.usageCount
+            )
+        }
+
+        // ResponseRecommendCourseDTO 생성
+        return ResponseRecommendCourseDTO(
+            title = "오늘은 이런 코스 어때요?",
+            item = courseSummaries
+        )
+    }
+
+    // 홈에 아무 것도 안 뜰때를 대비한 전체 코스 반환
+    fun getAllCoursesForHome(userId: String): ResponseRecommendCourseDTO {
+        val allCourse = getAllCourses(userId, PageRequest.of(0, 10))
+        val courseSummaries = allCourse.content.map { course ->
+            CourseSummary(
+                id = course.id,
+                title = course.title,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                sido = course.sido,
+                sigungu = course.sigungu,
+                tags = course.tag.map { it.name },
+                usageCount = course.usageCount
+            )
+        }
+
+        return ResponseRecommendCourseDTO(
+            title = "추천 코스에요!",
+            item = courseSummaries
+        )
+    }
+
+    // 최근 생성된 코스 조회
+    private fun getRecentCreatedCourses(): ResponseRecommendCourseDTO {
+        // 최근 생성된 PUBLIC 코스 조회
+        val recentCreatedCourseIds = courseRepository.findTop10ByStatusOrderByCreatedAtDesc(CourseStatus.PUBLIC)
+
+        val recentCreatedCourse = courseRepository.findCoursesWithTagsByIds(recentCreatedCourseIds)
+
+        // ID 순서를 유지하며 정렬
+        val sortedCourses = recentCreatedCourseIds.mapNotNull { id ->
+            recentCreatedCourse.find { it.id == id }
+        }
+
+        // 코스 정보를 CourseSummary로 매핑
+        val courseSummaries = sortedCourses.map { course ->
+            val geoJsonPosition = geoJsonWriter.write(course.position)
+
+            val (x, y) = extractCoordinates(geoJsonPosition)
+
+            val location = locationApiService.getNearestLocation(x, y)
+            val sido = location?.sido ?: "Unknown"
+            val sigungu = location?.sigungu ?: "Unknown"
+
+            CourseSummary(
+                id = course.id,
+                title = course.title,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                sido = sido,
+                sigungu = sigungu,
+                tags = course.courseTags.map { it.tag.name },
+                usageCount = course.usageCount
+            )
+        }
+
+        return ResponseRecommendCourseDTO(
+            title = "최근 생성된 코스에요!",
+            item = courseSummaries
+        )
+    }
+
     // 추천 코스 리스트
     override fun getCombinedRecommendCourses(userId: String): List<ResponseRecommendCourseDTO> {
         val recentCourse = getRecentCourses(userId)
         val popularCourse = getPopularCourses()
         val risingCourse = getRisingCourse()
+        val userInterestedTags = getUserInterestedTags(userId)
 
         println("recentCourse: $recentCourse")
         println("popularCourse: $popularCourse")
         println("risingCourse: $risingCourse")
+        println("userInterestedTags: $userInterestedTags")
+
+        // 최근 코스, 인기 코스, 급상승 코스, 관심 태그 코스가 모두 null인 경우
+        if (recentCourse == null && popularCourse == null && risingCourse == null && userInterestedTags == null) {
+            return listOf(getAllCoursesForHome(userId), getRecentCreatedCourses())
+        }
 
         // 필요한 코스 데이터를 리스트로 추가
-        return listOfNotNull(recentCourse, popularCourse, risingCourse)
+        return listOfNotNull(userInterestedTags, recentCourse, popularCourse, risingCourse)
+            .distinctBy { it.title } // 제목 기준으로 중복 제거
     }
 
     // 태그로 코스 검색
