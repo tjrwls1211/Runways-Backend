@@ -32,6 +32,7 @@ class WeatherServiceImpl(
 
     // Redis 캐시를 사용하여 날씨 데이터 저장 및 조회
     override fun getWeatherByCity(city: String, nx: Double, ny: Double): WeatherDataDTO {
+        println("${city}의 날씨 정보를 조회합니다. : $nx, $ny")
         val cacheKey = "weather:city:$city"
         val cachedData = redisTemplate.opsForValue().get(cacheKey)
         if (cachedData != null) {

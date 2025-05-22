@@ -53,6 +53,12 @@ data class Course(
     @Column(name = "usage_count", nullable = false)
     var usageCount : Int = 0,
 
+    @Column(name = "sido", length = 20)
+    var sido: String,
+
+    @Column(name = "sigungu", length = 20)
+    var sigungu: String,
+
     @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true,)
     @JsonManagedReference
     var courseTags: MutableList<CourseTag> = mutableListOf()

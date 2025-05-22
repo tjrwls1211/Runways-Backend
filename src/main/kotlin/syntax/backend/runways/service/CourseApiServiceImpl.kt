@@ -131,6 +131,15 @@ class CourseApiServiceImpl(
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
+        if (requestCourseDTO.sido == requestCourseDTO.sigungu) {
+            val x = position.coordinate.x
+            val y = position.coordinate.y
+            val nearestLocation = locationApiService.getNearestLocation(x, y)
+                ?: throw IllegalArgumentException("가장 가까운 Location을 찾을 수 없습니다.")
+            requestCourseDTO.sido = nearestLocation.sido
+            requestCourseDTO.sigungu = nearestLocation.sigungu
+        }
+
         val newCourse = Course(
             title = requestCourseDTO.title,
             maker = user,
@@ -140,6 +149,8 @@ class CourseApiServiceImpl(
             mapUrl = requestCourseDTO.mapUrl,
             status = requestCourseDTO.status,
             usageCount = 1,
+            sido = requestCourseDTO.sido,
+            sigungu = requestCourseDTO.sigungu,
         )
         courseRepository.save(newCourse)
 
@@ -253,14 +264,6 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            // 좌표 추출
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            // 위치 정보 조회
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             // List<Tag> 형태로 변환
             val tags = course.courseTags.map { it.tag }
 
@@ -279,8 +282,8 @@ class CourseApiServiceImpl(
                 author = course.maker.id == userId,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount
             )
@@ -290,6 +293,7 @@ class CourseApiServiceImpl(
     }
 
     // 코스 삭제
+    @Transactional
     override fun deleteCourse(courseId: UUID, userId: String): String {
         val optCourseData = courseRepository.findById(courseId)
         if (optCourseData.isPresent) {
@@ -300,6 +304,12 @@ class CourseApiServiceImpl(
             // 코스 상태 변경 -> 삭제 상태
             course.status = CourseStatus.DELETED
             courseRepository.save(course)
+
+            // 특정 코스와 관련된 인기 코스 데이터 삭제
+            popularCourseRepository.findByCourseId(courseId).forEach {
+                popularCourseRepository.delete(it)
+            }
+
             return "코스 삭제 성공"
         } else {
             return "코스를 찾을 수 없습니다."
@@ -373,12 +383,6 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             val commentCount = commentRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
 
             val tags = course.courseTags.map { it.tag }
@@ -402,8 +406,8 @@ class CourseApiServiceImpl(
                 author = course.maker.id == userId,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount,
             )
@@ -436,14 +440,6 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            // 좌표 추출
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            // 위치 정보 조회
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
 
@@ -468,8 +464,8 @@ class CourseApiServiceImpl(
                 author = course.maker.id == userId,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount,
             )
@@ -502,14 +498,6 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            // 좌표 추출
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            // 위치 정보 조회
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
 
@@ -534,8 +522,8 @@ class CourseApiServiceImpl(
                 author = course.maker.id == userId,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount,
             )
@@ -559,12 +547,11 @@ class CourseApiServiceImpl(
     override fun getRecentCourses(userId: String): ResponseRecommendCourseDTO? {
         val pageable = PageRequest.of(0, 10)
 
-        // RunningLog에서 코스 ID만 조회 (course가 null인 경우 제외)
-        val runningLogPage = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
-            .filter { it.course != null }
+        // RunningLog에서 유효한 코스 데이터만 조회
+        val runningLogs = runningLogRepository.findValidRunningLogsByUserId(userId, CourseStatus.DELETED, pageable)
 
         // 코스 ID 개수 세기
-        val courseIdCountMap = runningLogPage
+        val courseIdCountMap = runningLogs
             .groupingBy { it.course!!.id }
             .eachCount()
 
@@ -580,21 +567,13 @@ class CourseApiServiceImpl(
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = courses.map { course ->
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             CourseSummary(
                 id = course.id,
                 title = course.title,
                 distance = course.distance,
                 mapUrl = course.mapUrl,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 tags = course.courseTags.map { it.tag.name },
                 usageCount = courseIdCountMap[course.id] ?: 0
             )
@@ -635,21 +614,13 @@ class CourseApiServiceImpl(
                 val course = courseMap[popularCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${popularCourse.courseId}를 찾을 수 없습니다.")
 
-                val geoJsonPosition = geoJsonWriter.write(course.position)
-                val (x, y) = extractCoordinates(geoJsonPosition)
-
-                // 위치 정보 조회
-                val location = locationApiService.getNearestLocation(x, y)
-                val sido = location?.sido ?: "Unknown"
-                val sigungu = location?.sigungu ?: "Unknown"
-
                 CourseSummary(
                     id = course.id,
                     title = course.title,
                     distance = course.distance,
                     mapUrl = course.mapUrl,
-                    sido = sido,
-                    sigungu = sigungu,
+                    sido = course.sido,
+                    sigungu = course.sigungu,
                     tags = course.courseTags.map { it.tag.name },
                     usageCount = popularCourse.usageCount
                 )
@@ -692,22 +663,13 @@ class CourseApiServiceImpl(
                 val course = courseMap[risingCourse.courseId]
                     ?: throw EntityNotFoundException("코스 ID ${risingCourse.courseId}를 찾을 수 없습니다.")
 
-                // 코스의 위치와 좌표를 GeoJSON 형식으로 변환
-                val geoJsonPosition = geoJsonWriter.write(course.position)
-                val (x, y) = extractCoordinates(geoJsonPosition)
-
-                // 위치 정보 조회
-                val location = locationApiService.getNearestLocation(x, y)
-                val sido = location?.sido ?: "Unknown"
-                val sigungu = location?.sigungu ?: "Unknown"
-
                 CourseSummary(
                     id = course.id,
                     title = course.title,
                     distance = course.distance,
                     mapUrl = course.mapUrl,
-                    sido = sido,
-                    sigungu = sigungu,
+                    sido = course.sido,
+                    sigungu = course.sigungu,
                     tags = course.courseTags.map { it.tag.name },
                     usageCount = risingCourse.usageCount
                 )
@@ -777,6 +739,7 @@ class CourseApiServiceImpl(
                             position = positionNode,
                             coordinate = coordinateNode,
                             tag = tags,
+                            // 여긴 뺄 수도 있음
                             sido = sido,
                             sigungu = sigungu
                         )
@@ -817,6 +780,8 @@ class CourseApiServiceImpl(
         val coursesByTags = topTags.flatMap { tag ->
             searchCoursesByTag(tag.name, userId, PageRequest.of(0, 3)).content
         }
+
+        if (coursesByTags.isEmpty()) return null
 
         // 코스 리스트를 섞음
         val uniqueCourse = coursesByTags.shuffled().distinctBy { it.id }
@@ -879,21 +844,13 @@ class CourseApiServiceImpl(
 
         // 코스 정보를 CourseSummary로 매핑
         val courseSummaries = sortedCourses.map { course ->
-            val geoJsonPosition = geoJsonWriter.write(course.position)
-
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             CourseSummary(
                 id = course.id,
                 title = course.title,
                 distance = course.distance,
                 mapUrl = course.mapUrl,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 tags = course.courseTags.map { it.tag.name },
                 usageCount = course.usageCount
             )
@@ -952,12 +909,6 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            // 좌표 추출
-            val (x, y) = extractCoordinates(geoJsonPosition)
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             // 댓글 개수 조회
             val commentCount = getCommentCount(course.id)
 
@@ -982,8 +933,8 @@ class CourseApiServiceImpl(
                 author = course.maker.id == user.id,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount
             )

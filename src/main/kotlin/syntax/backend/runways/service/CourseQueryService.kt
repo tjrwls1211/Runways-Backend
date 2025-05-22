@@ -18,7 +18,6 @@ import syntax.backend.runways.repository.CourseRepository
 @Service
 class CourseQueryService(
     private val courseRepository: CourseRepository,
-    private val locationApiService: LocationApiService,
     private val commentRepository: CommentRepository,
     private val bookmarkRepository: BookmarkRepository
 ) {
@@ -54,12 +53,6 @@ class CourseQueryService(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            val (x, y) = extractCoordinates(geoJsonPosition)
-
-            val location = locationApiService.getNearestLocation(x, y)
-            val sido = location?.sido ?: "Unknown"
-            val sigungu = location?.sigungu ?: "Unknown"
-
             // 댓글 수를 맵에서 조회 (Long -> Int 변환)
             val commentCount = (commentCountMap[course.id] ?: 0L).toInt()
 
@@ -86,8 +79,8 @@ class CourseQueryService(
                 author = course.maker.id == userId,
                 status = course.status,
                 tag = tags,
-                sido = sido,
-                sigungu = sigungu,
+                sido = course.sido,
+                sigungu = course.sigungu,
                 commentCount = commentCount,
                 usageCount = course.usageCount,
             )
