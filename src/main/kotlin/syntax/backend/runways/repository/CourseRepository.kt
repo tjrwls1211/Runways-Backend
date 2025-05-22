@@ -54,10 +54,10 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         SELECT c.id
         FROM Course c
         JOIN c.courseTags ct
-        WHERE ct.tag.id = :tagId
+        WHERE ct.tag.id = :tagId AND c.status = :status
         ORDER BY c.usageCount DESC
     """)
-    fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, pageable: Pageable): Page<UUID>
+    fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, @Param("status") status: CourseStatus, pageable: Pageable): Page<UUID>
 
     // 최근 코스 조회
     @Query("""

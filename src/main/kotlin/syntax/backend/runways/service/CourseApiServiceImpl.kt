@@ -819,10 +819,10 @@ class CourseApiServiceImpl(
         }
 
         // 코스 리스트를 섞음
-        val shuffledCourses = coursesByTags.shuffled()
+        val uniqueCourse = coursesByTags.shuffled().distinctBy { it.id }
 
         // 섞인 코스를 CourseSummary로 매핑
-        val courseSummaries = shuffledCourses.map { course ->
+        val courseSummaries = uniqueCourse.map { course ->
             CourseSummary(
                 id = course.id,
                 title = course.title,
@@ -928,8 +928,8 @@ class CourseApiServiceImpl(
         val tag = tagRepository.findByName(tagName)
             ?: throw EntityNotFoundException("태그를 찾을 수 없습니다: $tagName")
 
-        // 코스 ID만 조회 usageCount 기준 정렬하고 페이징
-        val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, pageable)
+        // 코스 ID만 조회 (PUBLIC 상태 필터링)
+        val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, CourseStatus.PUBLIC, pageable)
         val courseIds = courseIdsPage.content
 
         // 북마크된 courseIds 조회
