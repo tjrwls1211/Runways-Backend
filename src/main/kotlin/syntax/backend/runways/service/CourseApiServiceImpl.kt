@@ -114,7 +114,7 @@ class CourseApiServiceImpl(
     // 댓글 개수 호출
     private fun getCommentCount(courseId: UUID): Int {
         val commentStatus = CommentStatus.PUBLIC
-        return commentRepository.countByPostId_IdAndStatus(courseId, commentStatus)
+        return commentRepository.countByPost_IdAndStatus(courseId, commentStatus)
     }
 
     // 코스 생성
@@ -383,7 +383,7 @@ class CourseApiServiceImpl(
             val positionNode = removeCrsFieldAsJsonNode(geoJsonPosition)
             val coordinateNode = removeCrsFieldAsJsonNode(geoJsonCoordinate)
 
-            val commentCount = commentRepository.countByPostId_IdAndStatus(course.id, CommentStatus.PUBLIC)
+            val commentCount = commentRepository.countByPost_IdAndStatus(course.id, CommentStatus.PUBLIC)
 
             val tags = course.courseTags.map { it.tag }
 

@@ -11,8 +11,8 @@ import syntax.backend.runways.entity.CommentStatus
 import java.util.*
 
 interface CommentRepository : JpaRepository<Comment, UUID> {
-    fun findByPostId_IdAndStatusOrderByCreatedAtDesc(postId: UUID, status: CommentStatus, pageable: Pageable): Page<Comment>
-    fun countByPostId_IdAndStatus(postId: UUID, status: CommentStatus): Int
+    fun findByPost_IdAndStatusOrderByCreatedAtAsc(postId: UUID, status: CommentStatus, pageable: Pageable): Page<Comment>
+    fun countByPost_IdAndStatus(postId: UUID, status: CommentStatus): Int
     fun countByParent_IdAndStatus(parentId: UUID, status: CommentStatus): Int
     fun findByParent_Id(parentId: UUID): List<Comment>
     /*

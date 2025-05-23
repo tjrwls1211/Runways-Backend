@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import syntax.backend.runways.dto.ResponseCourseDTO
 import syntax.backend.runways.dto.ResponseMyCourseDTO
 import syntax.backend.runways.entity.CommentStatus
 import syntax.backend.runways.entity.CourseStatus

@@ -29,7 +29,7 @@ class CommentApiServiceImpl (
     override fun getParentCommentList(courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 댓글 불러오기
         val status = CommentStatus.PUBLIC
-        val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
+        val commentData = commentRepository.findByPost_IdAndStatusOrderByCreatedAtAsc(courseId, status, pageable)
         val filteredComments = commentData
             .filter { it.parent == null }
             .map { comment ->
@@ -53,7 +53,7 @@ class CommentApiServiceImpl (
     override fun getChildCommentList(parentId: UUID, courseId: UUID, pageable: Pageable, userId : String): Page<ResponseCommentDTO> {
         // 답글 불러오기
         val status = CommentStatus.PUBLIC
-        val commentData = commentRepository.findByPostId_IdAndStatusOrderByCreatedAtDesc(courseId, status, pageable)
+        val commentData = commentRepository.findByPost_IdAndStatusOrderByCreatedAtAsc(courseId, status, pageable)
         val filteredComments = commentData
             .filter { it.parent?.id == parentId }
             .map { comment ->
