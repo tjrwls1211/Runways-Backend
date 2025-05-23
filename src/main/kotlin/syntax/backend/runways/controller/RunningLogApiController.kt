@@ -9,6 +9,8 @@ import syntax.backend.runways.dto.RunningLogDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.service.RunningLogApiService
 import syntax.backend.runways.util.SecurityUtil
+import java.time.LocalDate
+import java.util.UUID
 
 @RestController
 @RequestMapping("api/runninglog")
@@ -25,22 +27,17 @@ class RunningLogApiController(
 
     // 러닝 로그 조회
     @GetMapping("/get")
-    fun getRunningLog(
-        @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "10") size: Int
-    ): ResponseEntity<PagedResponse<RunningLogDTO>> {
-        val pageable = PageRequest.of(page, size)
+    fun getRunningLog(@RequestParam startTime : LocalDate, endTime : LocalDate) : ResponseEntity<List<RunningLogDTO>> {
         val userId = SecurityUtil.getCurrentUserId()
-        val runningLogs = runningLogApiService.getRunningLog(userId, pageable)
+        val runningLogs = runningLogApiService.getRunningLog(startTime, endTime, userId)
+        return ResponseEntity.ok(runningLogs)
+    }
 
-        val pagedResponse = PagedResponse(
-            content = runningLogs.content,
-            totalPages = runningLogs.totalPages,
-            totalElements = runningLogs.totalElements,
-            currentPage = runningLogs.number,
-            pageSize = runningLogs.size,
-        )
-
-        return ResponseEntity.ok(pagedResponse)
+    // 러닝 로그 삭제
+    @DeleteMapping("/delete/{runningLogId}")
+    fun deleteRunningLog(@PathVariable runningLogId: UUID): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        runningLogApiService.deleteRunningLog(runningLogId, userId)
+        return ResponseEntity.ok("러닝 로그 삭제 완료")
     }
 }

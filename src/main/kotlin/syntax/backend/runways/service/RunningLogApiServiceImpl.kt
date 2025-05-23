@@ -5,15 +5,17 @@ import jakarta.transaction.Transactional
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.dto.RunningLogDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.User
+import syntax.backend.runways.exception.NotAuthorException
 import syntax.backend.runways.repository.CourseRepository
 import syntax.backend.runways.repository.RunningLogRepository
+import syntax.backend.runways.entity.RunningLogStatus
+import java.time.LocalDate
+import java.util.UUID
 
 
 @Service
@@ -68,8 +70,27 @@ class RunningLogApiServiceImpl (
         return runningLogRepository.save(runningLog)
     }
 
-    override fun getRunningLog(userId: String, pageable: Pageable): Page<RunningLogDTO> {
-        val runningLogs = runningLogRepository.findByUserIdOrderByEndTimeDesc(userId, pageable)
+    // 러닝로그 조회
+    override fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String): List<RunningLogDTO> {
+        val runningLogs = runningLogRepository.findByUserIdAndStatusAndEndTimeBetweenOrderByEndTimeDesc(
+            userId,
+            RunningLogStatus.PUBLIC,
+            startTime.atStartOfDay(),
+            endTime.atTime(23, 59, 59)
+        )
         return runningLogs.map { RunningLogDTO.from(it) }
+    }
+
+    // 러닝로그 삭제
+    override fun deleteRunningLog(runningLogId: UUID, userId: String) {
+        val runningLog = runningLogRepository.findById(runningLogId)
+            .orElseThrow { EntityNotFoundException("러닝 로그를 찾을 수 없습니다") }
+
+        if (runningLog.user.id != userId) {
+            throw NotAuthorException("러닝 로그의 작성자가 아닙니다")
+        }
+
+        runningLog.status= RunningLogStatus.DELETED
+        runningLogRepository.save(runningLog)
     }
 }

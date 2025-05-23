@@ -6,9 +6,12 @@ import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.dto.RunningLogDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.User
+import java.time.LocalDate
+import java.util.UUID
 
 
 interface RunningLogApiService {
     fun saveRunningLog(requestRunningLogDTO: RequestRunningLogDTO, user: User) : RunningLog
-    fun getRunningLog(userId: String, pageable: Pageable, ): Page<RunningLogDTO>
+    fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String): List<RunningLogDTO>
+    fun deleteRunningLog(runningLogId: UUID, userId: String)
 }

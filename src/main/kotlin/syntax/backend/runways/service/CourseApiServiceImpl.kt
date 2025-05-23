@@ -545,22 +545,12 @@ class CourseApiServiceImpl(
 
     // 최근 사용 코스 조회
     override fun getRecentCourses(userId: String): ResponseRecommendCourseDTO? {
-        val pageable = PageRequest.of(0, 10)
+        // RunningLog에서 유효한 코스 ID만 Top 5 조회
+        val courseIds = runningLogRepository.findTop5CourseIdsByUserIdAndCourseStatusNotOrderByEndTimeDesc(userId, CourseStatus.DELETED)
 
-        // RunningLog에서 유효한 코스 데이터만 조회
-        val runningLogs = runningLogRepository.findValidRunningLogsByUserId(userId, CourseStatus.DELETED, pageable)
-
-        // 코스 ID 개수 세기
-        val courseIdCountMap = runningLogs
-            .groupingBy { it.course!!.id }
-            .eachCount()
-
-        if (courseIdCountMap.isEmpty()) {
+        if (courseIds.isEmpty()) {
             return null
         }
-
-        // courseIds를 courseIdCountMap 키로 생성
-        val courseIds = courseIdCountMap.keys.toList()
 
         // 코스 정보를 한 번에 조회
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
@@ -575,7 +565,7 @@ class CourseApiServiceImpl(
                 sido = course.sido,
                 sigungu = course.sigungu,
                 tags = course.courseTags.map { it.tag.name },
-                usageCount = courseIdCountMap[course.id] ?: 0
+                usageCount = course.usageCount
             )
         }
 
