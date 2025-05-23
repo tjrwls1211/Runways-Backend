@@ -17,7 +17,8 @@ data class RunningLogDTO(
     val position: ObjectNode?,
     val coordinate: ObjectNode?,
     val startTime: LocalDateTime,
-    val endTime: LocalDateTime
+    val endTime: LocalDateTime,
+    val mapUrl: String
 ) {
     companion object {
         private val objectMapper = ObjectMapper()
@@ -42,7 +43,8 @@ data class RunningLogDTO(
                 position = positionNode,
                 coordinate = coordinateNode,
                 startTime = runningLog.startTime,
-                endTime = runningLog.endTime
+                endTime = runningLog.endTime,
+                mapUrl = runningLog.mapUrl
             )
         }
     }

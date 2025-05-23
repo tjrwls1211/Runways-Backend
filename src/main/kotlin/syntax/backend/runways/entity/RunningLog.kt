@@ -53,6 +53,9 @@ data class RunningLog(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 
+    @Column(name = "map_url", columnDefinition = "text")
+    var mapUrl: String,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     var status: RunningLogStatus = RunningLogStatus.PUBLIC,

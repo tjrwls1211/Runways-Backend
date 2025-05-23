@@ -12,5 +12,6 @@ data class RequestRunningLogDTO(
     val position: String,
     val coordinate: String,
     val startTime: LocalDateTime,
-    val endTime: LocalDateTime
+    val endTime: LocalDateTime,
+    val mapUrl: String
 )

@@ -5,6 +5,8 @@ import jakarta.transaction.Transactional
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.Point
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.dto.RunningLogDTO
@@ -54,7 +56,8 @@ class RunningLogApiServiceImpl (
             position = position as Point,
             coordinate = coordinate as LineString,
             startTime = requestRunningLogDTO.startTime,
-            endTime = requestRunningLogDTO.endTime
+            endTime = requestRunningLogDTO.endTime,
+            mapUrl = requestRunningLogDTO.mapUrl,
         )
 
         // 코스가 있을 경우 사용 횟수 증가
@@ -70,13 +73,13 @@ class RunningLogApiServiceImpl (
         return runningLogRepository.save(runningLog)
     }
 
-    // 러닝로그 조회
-    override fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String): List<RunningLogDTO> {
+    override fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String, pageable: Pageable): Page<RunningLogDTO> {
         val runningLogs = runningLogRepository.findByUserIdAndStatusAndEndTimeBetweenOrderByEndTimeDesc(
             userId,
             RunningLogStatus.PUBLIC,
             startTime.atStartOfDay(),
-            endTime.atTime(23, 59, 59)
+            endTime.atTime(23, 59, 59),
+            pageable
         )
         return runningLogs.map { RunningLogDTO.from(it) }
     }

@@ -37,7 +37,7 @@ data class Course(
     @Column(columnDefinition = "geometry(LineString, 4326)", nullable = false)
     var coordinate: LineString = GeometryFactory().createLineString(arrayOf(Coordinate(0.0, 0.0), Coordinate(1.0, 1.0))),
 
-    @Column(name = "mapUrl", columnDefinition = "text")
+    @Column(name = "map_url", columnDefinition = "text")
     var mapUrl: String,
 
     @Column(name = "createdAt", nullable = false)

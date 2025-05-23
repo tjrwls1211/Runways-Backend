@@ -12,6 +12,6 @@ import java.util.UUID
 
 interface RunningLogApiService {
     fun saveRunningLog(requestRunningLogDTO: RequestRunningLogDTO, user: User) : RunningLog
-    fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String): List<RunningLogDTO>
+    fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String, pageable: Pageable): Page<RunningLogDTO>
     fun deleteRunningLog(runningLogId: UUID, userId: String)
 }

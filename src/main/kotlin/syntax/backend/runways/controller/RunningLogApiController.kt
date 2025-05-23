@@ -1,5 +1,6 @@
 package syntax.backend.runways.controller
 
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -27,10 +28,25 @@ class RunningLogApiController(
 
     // 러닝 로그 조회
     @GetMapping("/get")
-    fun getRunningLog(@RequestParam startTime : LocalDate, endTime : LocalDate) : ResponseEntity<List<RunningLogDTO>> {
+    fun getRunningLog(
+        @RequestParam startTime : LocalDate,
+        @RequestParam endTime : LocalDate,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "10") size: Int
+    ) : ResponseEntity<PagedResponse<RunningLogDTO>> {
+        val pageable = PageRequest.of(page, size)
         val userId = SecurityUtil.getCurrentUserId()
-        val runningLogs = runningLogApiService.getRunningLog(startTime, endTime, userId)
-        return ResponseEntity.ok(runningLogs)
+        val runningLogs = runningLogApiService.getRunningLog(startTime, endTime, userId, pageable)
+
+        val pagedResponse = PagedResponse<RunningLogDTO>(
+            content = runningLogs.content,
+            totalPages = runningLogs.totalPages,
+            totalElements = runningLogs.totalElements,
+            currentPage = runningLogs.number,
+            pageSize = runningLogs.size
+        )
+
+        return ResponseEntity.ok(pagedResponse)
     }
 
     // 러닝 로그 삭제

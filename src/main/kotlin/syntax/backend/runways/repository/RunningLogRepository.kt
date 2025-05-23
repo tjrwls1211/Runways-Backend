@@ -16,8 +16,9 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         userId: String,
         status: RunningLogStatus,
         startTime: LocalDateTime,
-        endTime: LocalDateTime
-    ): List<RunningLog>
+        endTime: LocalDateTime,
+        pageable: Pageable
+    ): Page<RunningLog>
 
     fun findByEndTimeBetween(startTime: LocalDateTime, endTime: LocalDateTime): List<RunningLog>
 
