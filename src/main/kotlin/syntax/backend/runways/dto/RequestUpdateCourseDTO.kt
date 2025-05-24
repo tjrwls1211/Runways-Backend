@@ -12,4 +12,6 @@ data class RequestUpdateCourseDTO (
     val mapUrl: String,
     val status : CourseStatus,
     val tag : List<UUID>,
+    var sido : String,
+    var sigungu : String
 )

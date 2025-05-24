@@ -131,7 +131,7 @@ class CourseApiServiceImpl(
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
-        if (requestCourseDTO.sido == requestCourseDTO.sigungu) {
+        if (requestCourseDTO.sido == requestCourseDTO.sigungu || requestCourseDTO.sido=="Unknown" || requestCourseDTO.sigungu=="Unknown") {
             val x = position.coordinate.x
             val y = position.coordinate.y
             val nearestLocation = locationApiService.getNearestLocation(x, y)
@@ -148,7 +148,7 @@ class CourseApiServiceImpl(
             coordinate = coordinate as LineString,
             mapUrl = requestCourseDTO.mapUrl,
             status = requestCourseDTO.status,
-            usageCount = 1,
+            usageCount = 0,
             sido = requestCourseDTO.sido,
             sigungu = requestCourseDTO.sigungu,
         )
@@ -206,6 +206,15 @@ class CourseApiServiceImpl(
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
         }
 
+        if (requestUpdateCourseDTO.sido == requestUpdateCourseDTO.sigungu || requestUpdateCourseDTO.sido=="Unknown" || requestUpdateCourseDTO.sigungu=="Unknown") {
+            val x = position.coordinate.x
+            val y = position.coordinate.y
+            val nearestLocation = locationApiService.getNearestLocation(x, y)
+                ?: throw IllegalArgumentException("가장 가까운 Location을 찾을 수 없습니다.")
+            requestUpdateCourseDTO.sido = nearestLocation.sido
+            requestUpdateCourseDTO.sigungu = nearestLocation.sigungu
+        }
+
         courseData.title = requestUpdateCourseDTO.title
         courseData.distance = requestUpdateCourseDTO.distance
         courseData.position = position as Point
@@ -213,6 +222,8 @@ class CourseApiServiceImpl(
         courseData.mapUrl = requestUpdateCourseDTO.mapUrl
         courseData.status = requestUpdateCourseDTO.status
         courseData.updatedAt = LocalDateTime.now()
+        courseData.sido = requestUpdateCourseDTO.sido
+        courseData.sigungu = requestUpdateCourseDTO.sigungu
 
         courseRepository.save(courseData)
 
@@ -612,7 +623,7 @@ class CourseApiServiceImpl(
                     sido = course.sido,
                     sigungu = course.sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    usageCount = popularCourse.usageCount
+                    usageCount = course.usageCount
                 )
             }
 
@@ -661,7 +672,7 @@ class CourseApiServiceImpl(
                     sido = course.sido,
                     sigungu = course.sigungu,
                     tags = course.courseTags.map { it.tag.name },
-                    usageCount = risingCourse.usageCount
+                    usageCount = course.usageCount
                 )
             }
 
