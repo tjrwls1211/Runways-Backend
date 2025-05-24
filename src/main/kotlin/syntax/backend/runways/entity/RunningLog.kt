@@ -56,6 +56,12 @@ data class RunningLog(
     @Column(name = "map_url", columnDefinition = "text")
     var mapUrl: String,
 
+    @Column(name = "sido", length = 20)
+    var sido: String,
+
+    @Column(name = "sigungu", length = 20)
+    var sigungu: String,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     var status: RunningLogStatus = RunningLogStatus.PUBLIC,

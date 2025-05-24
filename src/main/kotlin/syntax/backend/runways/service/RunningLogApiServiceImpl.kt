@@ -58,6 +58,8 @@ class RunningLogApiServiceImpl (
             startTime = requestRunningLogDTO.startTime,
             endTime = requestRunningLogDTO.endTime,
             mapUrl = requestRunningLogDTO.mapUrl,
+            sido = requestRunningLogDTO.sido,
+            sigungu = requestRunningLogDTO.sigungu,
         )
 
         // 코스가 있을 경우 사용 횟수 증가
@@ -73,6 +75,7 @@ class RunningLogApiServiceImpl (
         return runningLogRepository.save(runningLog)
     }
 
+    // 러닝로그 조회
     override fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String, pageable: Pageable): Page<RunningLogDTO> {
         val runningLogs = runningLogRepository.findByUserIdAndStatusAndEndTimeBetweenOrderByEndTimeDesc(
             userId,
