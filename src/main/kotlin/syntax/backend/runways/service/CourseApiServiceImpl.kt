@@ -244,7 +244,7 @@ class CourseApiServiceImpl(
         // 삭제해야 할 태그
         val tagsToRemove = existingTags.filterNot { it in newTags }.distinct()
         val tagsToRemoveEntities = tagRepository.findAllById(tagsToRemove).map { tag ->
-            tag.apply { usageCount -= 1 } // 태그 사용 횟수 감소
+            tag.apply { usageCount = (usageCount - 1).coerceAtLeast(0) }
         }
         courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove) // 코스 태그 삭제
         tagRepository.saveAll(tagsToRemoveEntities) // 태그 저장
@@ -588,7 +588,7 @@ class CourseApiServiceImpl(
         }
 
         return ResponseRecommendCourseDTO(
-            title = "최근 사용한 코스에요!",
+            title = "🕓 최근에 이용하셨어요!",
             item = courseSummaries
         )
     }
@@ -635,7 +635,7 @@ class CourseApiServiceImpl(
             }
 
         return ResponseRecommendCourseDTO(
-            title = "어제 많이 이용한 코스에요!",
+            title = "🌟 어제 많이 이용한 코스에요!",
             item = courseSummaries
         )
     }
@@ -684,7 +684,7 @@ class CourseApiServiceImpl(
             }
 
         return ResponseRecommendCourseDTO(
-            title = "오늘 급상승 코스에요!",
+            title = "📈 실시간으로 급상승중이에요!",
             item = courseSummaries
         )
     }
@@ -810,7 +810,7 @@ class CourseApiServiceImpl(
 
         // ResponseRecommendCourseDTO 생성
         return ResponseRecommendCourseDTO(
-            title = "오늘은 이런 코스 어때요?",
+            title = "🎯 이런 코스들은 어때요?",
             item = courseSummaries
         )
     }
@@ -833,7 +833,7 @@ class CourseApiServiceImpl(
         }
 
         return ResponseRecommendCourseDTO(
-            title = "추천 코스에요!",
+            title = "🗺️ 추천 코스에요!",
             item = courseSummaries
         )
     }
@@ -865,13 +865,15 @@ class CourseApiServiceImpl(
         }
 
         return ResponseRecommendCourseDTO(
-            title = "최근 생성된 코스에요!",
+            title = "🍞 따끈따끈 갓 나온 코스에요!",
             item = courseSummaries
         )
+
     }
 
     // 추천 코스 리스트
-    override fun getCombinedRecommendCourses(userId: String): List<ResponseRecommendCourseDTO> {
+    override fun getCombinedRecommendCourses(nx: Double, ny:Double ,userId: String): List<ResponseRecommendCourseDTO> {
+        val nearCourseByDifficulty = getNearbyCoursesByDifficulty(nx, ny,userId)
         val recentCourse = getRecentCourses(userId)
         val popularCourse = getPopularCourses()
         val risingCourse = getRisingCourse()
@@ -883,7 +885,7 @@ class CourseApiServiceImpl(
         }
 
         // 필요한 코스 데이터를 리스트로 추가
-        return listOfNotNull(userInterestedTags, recentCourse, popularCourse, risingCourse)
+        return listOfNotNull( nearCourseByDifficulty, userInterestedTags, recentCourse, popularCourse, risingCourse)
             .distinctBy { it.title } // 제목 기준으로 중복 제거
     }
 
@@ -959,6 +961,84 @@ class CourseApiServiceImpl(
         return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
 
-    // 사용자 오늘 상태에 맞는 코스 추천
+    // 난이도로 코스 검색
+    private fun getNearbyCoursesByDifficulty(
+        nx: Double,
+        ny: Double,
+        userId: String,
+    ): ResponseRecommendCourseDTO? {
+        // 조회 반경 설정 (기본값: 2000m)
+        val radius = 2000.0
 
+        // 사용자의 오늘 상태 조회
+        val attendance = attendanceApiService.getAttendance(userId)
+            ?: return null
+
+        // `courseDifficultyPreference`를 우선적으로 확인
+        val difficulties = when (attendance.courseDifficultyPreference?.toIntOrNull()) {
+            1 -> listOf(CourseDifficulty.EASY)
+            2 -> listOf(CourseDifficulty.NORMAL, CourseDifficulty.EASY)
+            3 -> listOf(CourseDifficulty.HARD)
+            0, null -> { // 상관없음 또는 값이 없을 경우
+                val totalScore = (attendance.bodyState?.toIntOrNull() ?: 0) +
+                        (attendance.feeling?.toIntOrNull() ?: 0)
+
+                when {
+                    totalScore <= 2 -> listOf(CourseDifficulty.EASY)
+                    totalScore in 3..4 -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)
+                    totalScore in 5..6 -> listOf(CourseDifficulty.NORMAL, CourseDifficulty.HARD)
+                    else -> listOf(CourseDifficulty.HARD)
+                }
+            }
+            else -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL) // 기본값
+        }
+
+        println("난이도: ${difficulties.joinToString { it.name }}")
+        val courseIds = courseRepository.findNearbyCourseIdsByDifficulty(
+            lon = nx,
+            lat = ny,
+            difficulties = difficulties.map { it.name },
+            radius = radius
+        )
+
+        if (courseIds.isEmpty()) {
+            return null
+        }
+
+        val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
+
+        val courseSummaries = courses.map { course ->
+            val tags = course.courseTags.map { it.tag }
+            CourseSummary(
+                id = course.id,
+                title = course.title,
+                distance = course.distance,
+                mapUrl = course.mapUrl,
+                sido = course.sido,
+                sigungu = course.sigungu,
+                tags = tags.map { it.name },
+                usageCount = course.usageCount
+            )
+        }
+
+        // 제목 설정
+        val title = when {
+            difficulties.containsAll(listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)) ->
+                "🌤️ 오늘은 조금 가볍게 뛰어볼까요?"
+            difficulties.containsAll(listOf(CourseDifficulty.NORMAL, CourseDifficulty.HARD)) ->
+                "🔥 오늘은 조금 열심히 달려볼까요!!"
+            difficulties.contains(CourseDifficulty.EASY) ->
+                "😊 오늘 지친 당신을 위한 힐링 코스"
+            difficulties.contains(CourseDifficulty.NORMAL) ->
+                "🏃‍♂️ 오늘은 기분 좋게 달려볼까요?"
+            difficulties.contains(CourseDifficulty.HARD) ->
+                "💪 기운 넘치는 당신! 한계에 도전해볼까요?"
+            else -> "📍 추천 코스를 확인해보세요!"
+        }
+
+        return ResponseRecommendCourseDTO(
+            title = title,
+            item = courseSummaries
+        )
+    }
 }

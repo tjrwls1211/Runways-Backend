@@ -80,4 +80,29 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         ORDER BY c.createdAt DESC
     """)
     fun findTop10ByStatusOrderByCreatedAtDesc(status: CourseStatus): List<UUID>
+
+    @Query("""
+        SELECT id
+        FROM courses
+        WHERE difficulty IN (:difficulties)
+            AND ST_DWithin(
+              ST_Transform(position, 3857), 
+                ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 3857),
+                :radius
+            )
+            AND status = 'PUBLIC'
+        ORDER BY ST_Distance(
+            ST_Transform(position, 3857),
+            ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 3857)
+        )
+        LIMIT 10
+    """, nativeQuery = true)
+    fun findNearbyCourseIdsByDifficulty(
+        @Param("lon") lon: Double,
+        @Param("lat") lat: Double,
+        @Param("difficulties") difficulties: List<String>,
+        @Param("radius") radius: Double
+    ): List<UUID>
+
+
 }
