@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.Point
 import org.locationtech.jts.io.WKTReader
 import org.locationtech.jts.io.geojson.GeoJsonWriter
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -18,23 +19,10 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
-import syntax.backend.runways.entity.ActionType
-import syntax.backend.runways.entity.Bookmark
-import syntax.backend.runways.entity.CommentStatus
-import syntax.backend.runways.entity.Course
-import syntax.backend.runways.entity.CourseStatus
-import syntax.backend.runways.entity.CourseTag
-import syntax.backend.runways.entity.Tag
-import syntax.backend.runways.entity.TagLog
+import syntax.backend.runways.entity.*
+import syntax.backend.runways.event.CourseCreatedEvent
 import syntax.backend.runways.exception.NotAuthorException
-import syntax.backend.runways.repository.BookmarkRepository
-import syntax.backend.runways.repository.CommentRepository
-import syntax.backend.runways.repository.CourseRepository
-import syntax.backend.runways.repository.CourseTagRepository
-import syntax.backend.runways.repository.PopularCourseRepository
-import syntax.backend.runways.repository.RunningLogRepository
-import syntax.backend.runways.repository.TagLogRepository
-import syntax.backend.runways.repository.TagRepository
+import syntax.backend.runways.repository.*
 import syntax.backend.runways.util.DistanceUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -60,6 +48,7 @@ class CourseApiServiceImpl(
     private val experienceService: ExperienceService,
     private val messagingTemplate: SimpMessagingTemplate,
     private val bookmarkRepository: BookmarkRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : CourseApiService {
 
     @Value("\${llm-server-url}")
@@ -126,6 +115,10 @@ class CourseApiServiceImpl(
         val position = wktReader.read(requestCourseDTO.position) // Point
         val coordinate = wktReader.read(requestCourseDTO.coordinate) // LineString
 
+        // 공간 연산을 위해 SRID 설정
+        position.srid = 4326
+        coordinate.srid = 4326
+
         // 유효성 검사
         if (position.geometryType != "Point" || coordinate.geometryType != "LineString") {
             throw IllegalArgumentException("유효하지 않은 WKT 형식: position은 Point여야 하고 coordinate는 LineString이어야 합니다.")
@@ -150,8 +143,9 @@ class CourseApiServiceImpl(
             status = requestCourseDTO.status,
             usageCount = 0,
             sido = requestCourseDTO.sido,
-            sigungu = requestCourseDTO.sigungu,
+            sigungu = requestCourseDTO.sigungu
         )
+
         courseRepository.save(newCourse)
 
         // 태그 ID를 기반으로 CourseTag 및 TagLog 생성
@@ -172,6 +166,8 @@ class CourseApiServiceImpl(
 
         // 경험치 증가
         experienceService.addExperience(user, 50)
+
+        eventPublisher.publishEvent(CourseCreatedEvent(newCourse.id))
 
         return newCourse.id
     }
