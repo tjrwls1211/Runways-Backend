@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.PagedResponse
 import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.dto.RunningLogDTO
+import syntax.backend.runways.dto.UserRunningStatsDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.service.RunningLogApiService
 import syntax.backend.runways.util.SecurityUtil
@@ -55,5 +56,13 @@ class RunningLogApiController(
         val userId = SecurityUtil.getCurrentUserId()
         runningLogApiService.deleteRunningLog(runningLogId, userId)
         return ResponseEntity.ok("러닝 로그 삭제 완료")
+    }
+
+    // 유저 러닝 통계 조회
+    @GetMapping("/stats")
+    fun getRunningStats(): ResponseEntity<UserRunningStatsDTO>{
+        val userId = SecurityUtil.getCurrentUserId()
+        val runningStats = runningLogApiService.getRunningStats(userId)
+        return ResponseEntity.ok(runningStats)
     }
 }

@@ -33,4 +33,43 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         @Param("userId") userId: String,
         @Param("status") status: CourseStatus
     ): List<UUID>
+
+    @Query("SELECT SUM(rl.distance) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
+    fun sumDistanceByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Double?
+
+    @Query("SELECT SUM(rl.duration) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
+    fun sumDurationByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Long?
+
+    fun countByUserIdAndStatus(
+        userId: String,
+        status: RunningLogStatus
+    ): Long
+
+    @Query("""
+        SELECT FUNCTION('DAYOFWEEK', rl.startTime) AS dayOfWeek,
+           AVG(rl.distance) AS avgDistance,
+           AVG(rl.duration) AS avgDuration
+        FROM RunningLog rl
+        WHERE rl.user.id = :userId AND rl.status = :status
+        GROUP BY FUNCTION('DAYOFWEEK', rl.startTime)
+    """)
+    fun findAvgDistanceAndDurationByDayOfWeek(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): List<Array<Any>>
+
+    @Query("SELECT MAX(rl.maxSpeed) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
+    fun findMaxSpeedByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Float?
+
+
+
 }

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import syntax.backend.runways.dto.RequestRunningLogDTO
 import syntax.backend.runways.dto.RunningLogDTO
+import syntax.backend.runways.dto.UserRunningStatsDTO
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.exception.NotAuthorException
@@ -99,4 +100,30 @@ class RunningLogApiServiceImpl (
         runningLog.status= RunningLogStatus.DELETED
         runningLogRepository.save(runningLog)
     }
+
+    // 유저 러닝 통계 조회
+    override fun getRunningStats(userId: String): UserRunningStatsDTO {
+        val totalDistance = runningLogRepository.sumDistanceByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0.0
+        val totalDuration = runningLogRepository.sumDurationByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0L
+        val totalLogs = runningLogRepository.countByUserIdAndStatus(userId, RunningLogStatus.PUBLIC)
+        val maxSpeed = runningLogRepository.findMaxSpeedByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0.0f
+
+        // 평균 거리, 시간 계산
+        val averageDistance = if (totalLogs > 0) totalDistance / totalLogs else 0.0
+        val averageDuration = if (totalLogs > 0) totalDuration.toDouble() / totalLogs else 0.0
+
+        // 평균 페이스 (duration: 초 → 분, distance: km)
+        val averagePace = if (totalDistance > 0) (totalDuration / 60.0) / totalDistance else 0.0  // 단위: 분/km
+
+        return UserRunningStatsDTO(
+            totalRunningDistance = totalDistance,
+            totalRunningTime = totalDuration,
+            totalWorkoutCount = totalLogs.toInt(),
+            averageDistance = String.format("%.2f", averageDistance).toDouble(),
+            averageDuration = String.format("%.2f", averageDuration).toDouble(),
+            averagePace = String.format("%.2f", averagePace).toDouble(),
+            maxSpeed = maxSpeed
+        )
+    }
+
 }
