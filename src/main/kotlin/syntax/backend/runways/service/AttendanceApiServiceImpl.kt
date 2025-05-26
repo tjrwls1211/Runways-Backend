@@ -38,7 +38,7 @@ class AttendanceApiServiceImpl(
             user = user,
             bodyState = attendanceDTO.bodyState,
             feeling = attendanceDTO.feeling,
-            courseTypePreference = attendanceDTO.courseTypePreference,
+            courseDifficultyPreference = attendanceDTO.courseDifficultyPreference,
             date = targetDate
         )
 
@@ -68,7 +68,7 @@ class AttendanceApiServiceImpl(
         val attendanceDTO = AttendanceDTO(
             bodyState = attendance.bodyState,
             feeling = attendance.feeling,
-            courseTypePreference = attendance.courseTypePreference
+            courseDifficultyPreference = attendance.courseDifficultyPreference
         )
 
         return attendanceDTO
@@ -94,7 +94,7 @@ class AttendanceApiServiceImpl(
         // 출석체크 수정
         existingAttendance.bodyState = attendanceDTO.bodyState
         existingAttendance.feeling = attendanceDTO.feeling
-        existingAttendance.courseTypePreference = attendanceDTO.courseTypePreference
+        existingAttendance.courseDifficultyPreference = attendanceDTO.courseDifficultyPreference
 
         attendanceRepository.save(existingAttendance)
         return true
