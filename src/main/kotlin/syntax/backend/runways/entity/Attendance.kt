@@ -30,6 +30,6 @@ data class Attendance (
     @Column(name = "feeling", nullable = true)
     var feeling : String? = null,
 
-    @Column(name = "course_type_preference", nullable = true)
-    var courseTypePreference : String? = null,
+    @Column(name = "course_difficulty_preference", nullable = true)
+    var courseDifficultyPreference : String? = null,
 )

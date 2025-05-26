@@ -59,6 +59,10 @@ data class Course(
     @Column(name = "sigungu", length = 20)
     var sigungu: String,
 
+    @Column(name = "difficulty")
+    @Enumerated(EnumType.STRING)
+    var difficulty: CourseDifficulty? = null,
+
     @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true,)
     @JsonManagedReference
     var courseTags: MutableList<CourseTag> = mutableListOf()
