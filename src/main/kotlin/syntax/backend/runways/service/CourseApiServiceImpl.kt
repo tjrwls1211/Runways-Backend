@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.*
 import syntax.backend.runways.event.CourseCreatedEvent
+import syntax.backend.runways.event.CourseUpdatedEvent
 import syntax.backend.runways.exception.NotAuthorException
 import syntax.backend.runways.repository.*
 import syntax.backend.runways.util.DistanceUtil
@@ -36,12 +37,12 @@ class CourseApiServiceImpl(
     private val locationApiService: LocationApiService,
     private val commentRepository: CommentRepository,
     private val courseQueryService: CourseQueryService,
-    private val weatherService : WeatherService,
+    private val weatherService: WeatherService,
     private val tendencyApiService: TendencyApiService,
     private val attendanceApiService: AttendanceApiService,
     private val runningLogRepository: RunningLogRepository,
     private val popularCourseRepository: PopularCourseRepository,
-    private val courseTagRepository : CourseTagRepository,
+    private val courseTagRepository: CourseTagRepository,
     private val tagApiService: TagApiService,
     private val tagRepository: TagRepository,
     private val tagLogRepository: TagLogRepository,
@@ -248,6 +249,7 @@ class CourseApiServiceImpl(
         courseTagRepository.deleteAllByCourseIdAndTagIdIn(courseData.id, tagsToRemove) // 코스 태그 삭제
         tagRepository.saveAll(tagsToRemoveEntities) // 태그 저장
 
+        eventPublisher.publishEvent(CourseUpdatedEvent(courseData.id))
         return courseData.id
     }
 
@@ -956,4 +958,7 @@ class CourseApiServiceImpl(
 
         return PageImpl(responseCourses, pageable, courseIdsPage.totalElements)
     }
+
+    // 사용자 오늘 상태에 맞는 코스 추천
+
 }
