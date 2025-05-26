@@ -25,7 +25,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException::class)
     fun handleEntityNotFoundException(ex: EntityNotFoundException, request: WebRequest): ResponseEntity<String> {
-        return ResponseEntity("요청한 엔티티를 찾을 수 없습니다", HttpStatus.NOT_FOUND)
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.message)
     }
 
     @ExceptionHandler(NotAuthorException::class)

@@ -11,6 +11,7 @@ import java.util.UUID
 
 interface BookmarkRepository : JpaRepository<Bookmark, Long> {
     fun existsByCourseIdAndUserId(courseId : UUID, userId : String) : Boolean
+    fun deleteByCourseId(courseId: UUID)
     fun findByCourseIdAndUserId(courseId: UUID, userId: String): Bookmark?
     fun deleteByCourseIdAndUserId(courseId: UUID, userId: String)
     @Query("SELECT b.course.id FROM Bookmark b WHERE b.user.id = :userId AND b.course.id IN :courseIds")

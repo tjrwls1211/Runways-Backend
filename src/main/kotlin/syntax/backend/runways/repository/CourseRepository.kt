@@ -10,8 +10,14 @@ import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
 interface CourseRepository : JpaRepository<Course, UUID> {
-    @Query("SELECT c FROM Course c LEFT JOIN FETCH c.courseTags ct LEFT JOIN FETCH ct.tag WHERE c.id = :courseId")
-    fun findByIdWithTags(@Param("courseId") courseId: UUID): Optional<Course>
+    @Query("""
+        SELECT DISTINCT c FROM Course c 
+        LEFT JOIN FETCH c.courseTags ct 
+        LEFT JOIN FETCH ct.tag
+        WHERE c.id = :courseId 
+        AND c.status IN :statuses
+    """)
+    fun findCourseWithTagsByIdAndStatuses(@Param("courseId") courseId: UUID, @Param("statuses") statuses : List<CourseStatus>): Optional<Course>
 
     @Query("SELECT c.id FROM Course c WHERE c.status = :status")
     fun findCourseIdsByStatus(
@@ -54,10 +60,17 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         SELECT c.id
         FROM Course c
         JOIN c.courseTags ct
-        WHERE ct.tag.id = :tagId AND c.status = :status
+        WHERE ct.tag.id = :tagId 
+        AND c.status = :status 
+        AND c.maker.id != :userId
         ORDER BY c.usageCount DESC
     """)
-    fun findCourseIdsByTagId(@Param("tagId") tagId: UUID, @Param("status") status: CourseStatus, pageable: Pageable): Page<UUID>
+    fun findCourseIdsByTagIdExcludingUser(
+        @Param("tagId") tagId: UUID,
+        @Param("status") status: CourseStatus,
+        @Param("userId") userId: String,
+        pageable: Pageable
+    ): Page<UUID>
 
     // 최근 코스 조회
     @Query("""

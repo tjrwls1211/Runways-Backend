@@ -257,12 +257,18 @@ class CourseApiServiceImpl(
 
     // 코스 상세정보
     override fun getCourseById(courseId: UUID, userId: String): ResponseCourseDetailDTO {
-        val optCourseData = courseRepository.findByIdWithTags(courseId)
+        val courseStatus = listOf(CourseStatus.PUBLIC, CourseStatus.PRIVATE, CourseStatus.FILTERED)
+        val optCourseData = courseRepository.findCourseWithTagsByIdAndStatuses(courseId, courseStatus)
         val commentCount = getCommentCount(courseId)
 
         // 코스 데이터가 존재하는지 확인
         if (optCourseData.isPresent) {
             val course = optCourseData.get()
+
+            // 코스 제작자 확인
+            if (course.maker.id != userId && course.status == CourseStatus.PRIVATE) {
+                throw NotAuthorException("비공개 코스는 제작자만 조회할 수 있습니다.")
+            }
 
             // 북마크 여부 확인
             val isBookmarked = bookmarkRepository.existsByCourseIdAndUserId(courseId, userId)
@@ -299,7 +305,7 @@ class CourseApiServiceImpl(
                 usageCount = course.usageCount
             )
         } else {
-            throw EntityNotFoundException("코스를 찾을 수 없습니다.")
+            throw EntityNotFoundException("존재하지 않거나 삭제된 코스입니다.")
         }
     }
 
@@ -321,6 +327,9 @@ class CourseApiServiceImpl(
                 popularCourseRepository.delete(it)
             }
 
+            // 북마크 삭제
+            bookmarkRepository.deleteByCourseId(courseId)
+
             return "코스 삭제 성공"
         } else {
             return "코스를 찾을 수 없습니다."
@@ -329,7 +338,7 @@ class CourseApiServiceImpl(
 
     // 북마크 추가
     override fun addBookmark(courseId: UUID, userId:String): String {
-        val course = courseRepository.findByIdWithTags(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
+        val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromId(userId)
 
         // 코스 제작자 확인
@@ -887,7 +896,7 @@ class CourseApiServiceImpl(
             ?: throw EntityNotFoundException("태그를 찾을 수 없습니다: $tagName")
 
         // 코스 ID만 조회 (PUBLIC 상태 필터링)
-        val courseIdsPage = courseRepository.findCourseIdsByTagId(tag.id, CourseStatus.PUBLIC, pageable)
+        val courseIdsPage = courseRepository.findCourseIdsByTagIdExcludingUser(tag.id, CourseStatus.PUBLIC, userId, pageable)
         val courseIds = courseIdsPage.content
 
         // 북마크된 courseIds 조회
