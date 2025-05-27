@@ -22,12 +22,12 @@ class CourseMappingService(
             FROM walkroads
             WHERE ST_Intersects(
                       ST_Transform(coordinate, 3857),
-                      ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 3)
+                      ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 5)
                   )
               AND ST_Length(
                       ST_Intersection(
                           ST_Transform(coordinate, 3857),
-                          ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 3)
+                          ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 5)
                       )
                   ) / ST_Length(ST_Transform(coordinate, 3857)) >= 0.5
             ORDER BY ST_Distance(

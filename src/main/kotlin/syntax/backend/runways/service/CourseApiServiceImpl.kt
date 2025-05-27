@@ -335,6 +335,7 @@ class CourseApiServiceImpl(
     }
 
     // 북마크 추가
+    @Transactional
     override fun addBookmark(courseId: UUID, userId:String): String {
         val course = courseRepository.findById(courseId).orElse(null) ?: throw EntityNotFoundException("코스를 찾을 수 없습니다")
         val user = userApiService.getUserDataFromId(userId)
