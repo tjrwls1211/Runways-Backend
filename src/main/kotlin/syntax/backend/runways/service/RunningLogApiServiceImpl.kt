@@ -99,47 +99,59 @@ class RunningLogApiServiceImpl (
         runningLogRepository.save(runningLog)
     }
 
-    override fun getRunningStats(userId: String, nowDate: LocalDate): RunningStatsResponseDTO {
-        // 1일부터 nowDate까지의 날짜 범위 설정
-        val startOfMonth = nowDate.withDayOfMonth(1)
-        val endOfMonth = nowDate.withDayOfMonth(nowDate.lengthOfMonth())
+    override fun getRunningStats(userId: String, requestDate: LocalDate): RunningStatsResponseDTO {
+        // 해당 월의 시작일과 종료일 계산
+        val startOfMonth = requestDate.withDayOfMonth(1)
+        val endOfMonth = requestDate.withDayOfMonth(requestDate.lengthOfMonth())
 
+        // 전체 누적 통계 조회
         val totalDistance = runningLogRepository.sumDistanceByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0.0
         val totalDuration = runningLogRepository.sumDurationByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0L
         val totalLogs = runningLogRepository.countByUserIdAndStatus(userId, RunningLogStatus.PUBLIC)
 
-        // 평균 거리, 시간 계산
-        val averageDistance = if (totalLogs > 0) totalDistance / totalLogs else 0.0
-        val averageDuration = if (totalLogs > 0) totalDuration.toDouble() / totalLogs else 0.0
+        // 월간 거리/시간 조회
+        val monthlyDistance = runningLogRepository.sumDistanceByUserIdAndStatusAndDateBetween(
+            userId, RunningLogStatus.PUBLIC,
+            startOfMonth.atStartOfDay(), endOfMonth.atTime(23, 59, 59)
+        ) ?: 0.0
 
-        // 1일부터 nowDate까지의 날짜 리스트 생성
-        val dateRange = (0..<nowDate.dayOfMonth).map { startOfMonth.plusDays(it.toLong()) }
+        val monthlyDuration = runningLogRepository.sumDurationByUserIdAndStatusAndDateBetween(
+            userId, RunningLogStatus.PUBLIC,
+            startOfMonth.atStartOfDay(), endOfMonth.atTime(23, 59, 59)
+        ) ?: 0L
 
-        // 데이터베이스에서 가져온 dailyCounts를 Map으로 변환 (날짜 -> 횟수)
-        val dailyCountsMap = runningLogRepository.findDailyCountsByUserIdAndStatusAndDateBetween(
-            userId,
-            RunningLogStatus.PUBLIC,
-            startOfMonth.atStartOfDay(),
-            nowDate.atTime(23, 59, 59)
-        ).associate {
+        // 월간 일별 러닝 횟수 조회 (한 번만 호출)
+        val rawDailyCounts = runningLogRepository.findDailyCountsByUserIdAndStatusAndDateBetween(
+            userId, RunningLogStatus.PUBLIC,
+            startOfMonth.atStartOfDay(), endOfMonth.atTime(23, 59, 59)
+        )
+
+        val dailyCountsMap = rawDailyCounts.associate {
             val date = (it[0] as java.sql.Date).toLocalDate()
             val count = (it[1] as Long).toInt()
             date to count
         }
 
-        // 날짜 범위에 따라 러닝 횟수 리스트 생성 (없으면 0으로 채움)
+        val dateRange = (0..<endOfMonth.dayOfMonth).map { startOfMonth.plusDays(it.toLong()) }
         val dailyCounts = dateRange.map { dailyCountsMap[it] ?: 0 }
 
+        val monthlyLogs = dailyCounts.sum() // 월간 러닝 횟수
+
+        // 월간 평균 계산
+        val averageDistance = if (monthlyLogs > 0) monthlyDistance / monthlyLogs else 0.0
+        val averageDuration = if (monthlyLogs > 0) monthlyDuration.toDouble() / monthlyLogs else 0.0
+
+        // 월간 통계 DTO
         val monthlyStats = MonthlyRunningStatsDTO(
             averageDistance = String.format("%.2f", averageDistance).toDouble(),
             averageDuration = String.format("%.2f", averageDuration).toDouble(),
-            averageCount = if (dailyCounts.isNotEmpty()) dailyCounts.sum().toDouble() / dailyCounts.size else 0.0,
-            totalDistance = totalDistance,
-            totalDuration = totalDuration.toDouble(),
-            dailyCounts = dailyCounts
+            totalDistance = monthlyDistance,
+            totalDuration = monthlyDuration.toDouble(),
+            dailyCounts = dailyCounts,
+            totalCount = monthlyLogs
         )
 
-        // 전체 누적 통계
+        // 전체 누적 통계 DTO
         val totalStats = TotalRunningStatsDTO(
             totalDistance = totalDistance,
             totalDuration = totalDuration.toDouble(),
@@ -151,5 +163,4 @@ class RunningLogApiServiceImpl (
             totalStats = totalStats
         )
     }
-
 }

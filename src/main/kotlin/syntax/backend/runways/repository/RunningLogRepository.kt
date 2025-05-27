@@ -40,35 +40,10 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         @Param("status") status: RunningLogStatus
     ): Double?
 
-    @Query("SELECT SUM(rl.duration) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
-    fun sumDurationByUserIdAndStatus(
-        @Param("userId") userId: String,
-        @Param("status") status: RunningLogStatus
-    ): Long?
-
     fun countByUserIdAndStatus(
         userId: String,
         status: RunningLogStatus
     ): Long
-
-    @Query("""
-        SELECT FUNCTION('DAYOFWEEK', rl.startTime) AS dayOfWeek,
-           AVG(rl.distance) AS avgDistance,
-           AVG(rl.duration) AS avgDuration
-        FROM RunningLog rl
-        WHERE rl.user.id = :userId AND rl.status = :status
-        GROUP BY FUNCTION('DAYOFWEEK', rl.startTime)
-    """)
-    fun findAvgDistanceAndDurationByDayOfWeek(
-        @Param("userId") userId: String,
-        @Param("status") status: RunningLogStatus
-    ): List<Array<Any>>
-
-    @Query("SELECT MAX(rl.maxSpeed) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
-    fun findMaxSpeedByUserIdAndStatus(
-        @Param("userId") userId: String,
-        @Param("status") status: RunningLogStatus
-    ): Float?
 
     // 특정 기간 동안의 일별 기록 조회
     @Query("""
@@ -84,4 +59,35 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         @Param("startDate") startDate: LocalDateTime,
         @Param("endDate") endDate: LocalDateTime
     ): List<Array<Any>>
+
+    @Query("""SELECT SUM(rl.duration) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status""")
+    fun sumDurationByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Long?
+
+    @Query("""
+        SELECT SUM(rl.distance) FROM RunningLog rl 
+        WHERE rl.user.id = :userId AND rl.status = :status 
+        AND rl.startTime BETWEEN :startDate AND :endDate
+    """)
+    fun sumDistanceByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): Double?
+
+    @Query("""
+    SELECT SUM(rl.duration) FROM RunningLog rl 
+    WHERE rl.user.id = :userId AND rl.status = :status 
+    AND rl.startTime BETWEEN :startDate AND :endDate
+""")
+    fun sumDurationByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): Long?
+
 }

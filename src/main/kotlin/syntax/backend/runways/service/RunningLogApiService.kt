@@ -15,5 +15,5 @@ interface RunningLogApiService {
     fun saveRunningLog(requestRunningLogDTO: RequestRunningLogDTO, user: User) : RunningLog
     fun getRunningLog(startTime: LocalDate, endTime: LocalDate, userId: String, pageable: Pageable): Page<RunningLogDTO>
     fun deleteRunningLog(runningLogId: UUID, userId: String)
-    fun getRunningStats(userId: String, date : LocalDate): RunningStatsResponseDTO
+    fun getRunningStats(userId: String, requestDate : LocalDate): RunningStatsResponseDTO
 }
