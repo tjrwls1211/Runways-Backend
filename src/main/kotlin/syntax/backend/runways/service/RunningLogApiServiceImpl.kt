@@ -8,9 +8,7 @@ import org.locationtech.jts.geom.Point
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import syntax.backend.runways.dto.RequestRunningLogDTO
-import syntax.backend.runways.dto.RunningLogDTO
-import syntax.backend.runways.dto.UserRunningStatsDTO
+import syntax.backend.runways.dto.*
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.exception.NotAuthorException
@@ -101,28 +99,56 @@ class RunningLogApiServiceImpl (
         runningLogRepository.save(runningLog)
     }
 
-    // 유저 러닝 통계 조회
-    override fun getRunningStats(userId: String): UserRunningStatsDTO {
+    override fun getRunningStats(userId: String, nowDate: LocalDate): RunningStatsResponseDTO {
+        // 1일부터 nowDate까지의 날짜 범위 설정
+        val startOfMonth = nowDate.withDayOfMonth(1)
+        val endOfMonth = nowDate.withDayOfMonth(nowDate.lengthOfMonth())
+
         val totalDistance = runningLogRepository.sumDistanceByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0.0
         val totalDuration = runningLogRepository.sumDurationByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0L
         val totalLogs = runningLogRepository.countByUserIdAndStatus(userId, RunningLogStatus.PUBLIC)
-        val maxSpeed = runningLogRepository.findMaxSpeedByUserIdAndStatus(userId, RunningLogStatus.PUBLIC) ?: 0.0f
 
         // 평균 거리, 시간 계산
         val averageDistance = if (totalLogs > 0) totalDistance / totalLogs else 0.0
         val averageDuration = if (totalLogs > 0) totalDuration.toDouble() / totalLogs else 0.0
 
-        // 평균 페이스 (duration: 초 → 분, distance: km)
-        val averagePace = if (totalDistance > 0) (totalDuration / 60.0) / totalDistance else 0.0  // 단위: 분/km
+        // 1일부터 nowDate까지의 날짜 리스트 생성
+        val dateRange = (0..<nowDate.dayOfMonth).map { startOfMonth.plusDays(it.toLong()) }
 
-        return UserRunningStatsDTO(
-            totalRunningDistance = totalDistance,
-            totalRunningTime = totalDuration,
-            totalWorkoutCount = totalLogs.toInt(),
+        // 데이터베이스에서 가져온 dailyCounts를 Map으로 변환 (날짜 -> 횟수)
+        val dailyCountsMap = runningLogRepository.findDailyCountsByUserIdAndStatusAndDateBetween(
+            userId,
+            RunningLogStatus.PUBLIC,
+            startOfMonth.atStartOfDay(),
+            nowDate.atTime(23, 59, 59)
+        ).associate {
+            val date = (it[0] as java.sql.Date).toLocalDate()
+            val count = (it[1] as Long).toInt()
+            date to count
+        }
+
+        // 날짜 범위에 따라 러닝 횟수 리스트 생성 (없으면 0으로 채움)
+        val dailyCounts = dateRange.map { dailyCountsMap[it] ?: 0 }
+
+        val monthlyStats = MonthlyRunningStatsDTO(
             averageDistance = String.format("%.2f", averageDistance).toDouble(),
             averageDuration = String.format("%.2f", averageDuration).toDouble(),
-            averagePace = String.format("%.2f", averagePace).toDouble(),
-            maxSpeed = maxSpeed
+            averageCount = if (dailyCounts.isNotEmpty()) dailyCounts.sum().toDouble() / dailyCounts.size else 0.0,
+            totalDistance = totalDistance,
+            totalDuration = totalDuration.toDouble(),
+            dailyCounts = dailyCounts
+        )
+
+        // 전체 누적 통계
+        val totalStats = TotalRunningStatsDTO(
+            totalDistance = totalDistance,
+            totalDuration = totalDuration.toDouble(),
+            totalCount = totalLogs.toInt()
+        )
+
+        return RunningStatsResponseDTO(
+            monthlyStats = monthlyStats,
+            totalStats = totalStats
         )
     }
 

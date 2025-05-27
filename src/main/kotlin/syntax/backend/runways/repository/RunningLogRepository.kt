@@ -70,6 +70,18 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         @Param("status") status: RunningLogStatus
     ): Float?
 
-
-
+    // 특정 기간 동안의 일별 기록 조회
+    @Query("""
+        SELECT DATE(r.endTime) AS date, COUNT(r) AS count
+        FROM RunningLog r
+        WHERE r.user.id = :userId AND r.status = :status
+        AND r.endTime BETWEEN :startDate AND :endDate
+        GROUP BY DATE(r.endTime)
+    """)
+    fun findDailyCountsByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): List<Array<Any>>
 }
