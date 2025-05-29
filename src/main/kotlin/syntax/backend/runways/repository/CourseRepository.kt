@@ -78,6 +78,7 @@ interface CourseRepository : JpaRepository<Course, UUID> {
         FROM Course c
         WHERE c.status = :status
         ORDER BY c.createdAt DESC
+        limit 10
     """)
     fun findTop10ByStatusOrderByCreatedAtDesc(status: CourseStatus): List<UUID>
 

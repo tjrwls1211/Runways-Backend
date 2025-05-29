@@ -6,7 +6,6 @@ import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseDifficulty
 import syntax.backend.runways.repository.CourseRepository
 import java.util.UUID
-import kotlin.compareTo
 
 @Service
 class DifficultyAnalyzerService(
@@ -14,6 +13,8 @@ class DifficultyAnalyzerService(
     private val courseRepository: CourseRepository
 ) {
     fun analyzeAndSaveDifficulty(courseId: UUID) {
+        val startTime = System.currentTimeMillis()
+
         val sql = """
             WITH base AS (
             SELECT w.incline_avg, w.length_m
@@ -33,11 +34,17 @@ class DifficultyAnalyzerService(
         )
 
         if (absSlope != null) {
+            println("절대 경사도 : $absSlope")
             val course = courseRepository.findById(courseId).orElseThrow()
             val difficulty = determineDifficulty(absSlope, course)
             course.difficulty = difficulty
             courseRepository.save(course)
         }
+
+        val endTime = System.currentTimeMillis()
+        println("analyzeAndSaveDifficulty 실행 시간: ${endTime - startTime} ms")
+
+
     }
 
     private fun determineDifficulty(absSlope: Double, course: Course): CourseDifficulty {
@@ -62,7 +69,7 @@ class DifficultyAnalyzerService(
             course.distance > 1.0 -> {
                 when {
                     absSlope >= 7 -> CourseDifficulty.HARD
-                    absSlope >= 4 -> CourseDifficulty.NORMAL
+                    absSlope >= 5 -> CourseDifficulty.NORMAL
                     else -> CourseDifficulty.EASY
                 }
             }

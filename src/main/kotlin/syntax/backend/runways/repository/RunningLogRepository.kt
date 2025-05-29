@@ -33,4 +33,61 @@ interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
         @Param("userId") userId: String,
         @Param("status") status: CourseStatus
     ): List<UUID>
+
+    @Query("SELECT SUM(rl.distance) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status")
+    fun sumDistanceByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Double?
+
+    fun countByUserIdAndStatus(
+        userId: String,
+        status: RunningLogStatus
+    ): Long
+
+    // 특정 기간 동안의 일별 기록 조회
+    @Query("""
+        SELECT DATE(r.endTime) AS date, COUNT(r) AS count
+        FROM RunningLog r
+        WHERE r.user.id = :userId AND r.status = :status
+        AND r.endTime BETWEEN :startDate AND :endDate
+        GROUP BY DATE(r.endTime)
+    """)
+    fun findDailyCountsByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): List<Array<Any>>
+
+    @Query("""SELECT SUM(rl.duration) FROM RunningLog rl WHERE rl.user.id = :userId AND rl.status = :status""")
+    fun sumDurationByUserIdAndStatus(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus
+    ): Long?
+
+    @Query("""
+        SELECT SUM(rl.distance) FROM RunningLog rl 
+        WHERE rl.user.id = :userId AND rl.status = :status 
+        AND rl.startTime BETWEEN :startDate AND :endDate
+    """)
+    fun sumDistanceByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): Double?
+
+    @Query("""
+    SELECT SUM(rl.duration) FROM RunningLog rl 
+    WHERE rl.user.id = :userId AND rl.status = :status 
+    AND rl.startTime BETWEEN :startDate AND :endDate
+""")
+    fun sumDurationByUserIdAndStatusAndDateBetween(
+        @Param("userId") userId: String,
+        @Param("status") status: RunningLogStatus,
+        @Param("startDate") startDate: LocalDateTime,
+        @Param("endDate") endDate: LocalDateTime
+    ): Long?
+
 }
