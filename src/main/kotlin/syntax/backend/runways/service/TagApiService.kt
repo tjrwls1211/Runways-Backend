@@ -9,4 +9,5 @@ interface TagApiService {
     fun searchTag(tag: String): List<Tag>
     fun getPopularTags(): List<Tag>
     fun getPersonalizedTags(userId : String): List<RecommendTagDTO>
+    fun resetTagLogsByUserId(userId: String)
 }

@@ -21,7 +21,7 @@ interface TagLogRepository : JpaRepository<TagLog, UUID> {
                         WHEN tl.action_type = 'SEARCHED' THEN 2
                         ELSE 0
                     END
-                ) * EXP(-0.1 * DATE_PART('day', now() - tl.created_at))
+                ) * EXP(-0.05 * DATE_PART('day', now() - tl.created_at))
             ) AS score,
             MAX(tl.created_at) AS lastUsed
         FROM tag_logs tl
@@ -34,6 +34,6 @@ interface TagLogRepository : JpaRepository<TagLog, UUID> {
     """,
         nativeQuery = true
     )
-
     fun findWeightedTagsByUser(@Param("userId") userId: String): List<TagScoreProjection>
+    fun deleteByUserId(userId : String): Int
 }

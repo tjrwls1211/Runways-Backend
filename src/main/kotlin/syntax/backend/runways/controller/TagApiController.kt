@@ -51,6 +51,11 @@ class TagApiController (
         return ResponseEntity.ok(personalizedTags)
     }
 
-
-
+    // 태그 추천 알고리즘 초기화
+    @PostMapping("/reset")
+    fun resetTagRecommendation(): ResponseEntity<String> {
+        val userId = SecurityUtil.getCurrentUserId()
+        tagApiService.resetTagLogsByUserId(userId)
+        return ResponseEntity.ok("태그 추천 알고리즘 초기화 완료")
+    }
 }

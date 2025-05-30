@@ -774,28 +774,65 @@ class CourseApiServiceImpl(
        throw IllegalStateException("LLM 요청이 실패하여 코스를 생성할 수 없습니다.")
     }
 
-    // 사용자가 관심 있어하는 태그로 코스 조회
+    // 사용자 관심 태그 기반 코스 추천
     fun getUserInterestedTags(userId: String): ResponseRecommendCourseDTO? {
         val interestTags = tagApiService.getPersonalizedTags(userId)
             .sortedByDescending { it.score } // score 기준으로 정렬
 
-        // 상위 3개의 태그 추출
-        val topTags = interestTags.take(3)
+        if (interestTags.isEmpty()) return null
 
-        // 태그가 없으면 null 반환
-        if (topTags.isEmpty()) return null
+        val coursesByTags = mutableListOf<ResponseCourseDTO>()
+        var startIndex = 0
 
-        // 각 태그에 대해 최대 3개의 코스를 조회
-        val coursesByTags = topTags.flatMap { tag ->
-            searchCoursesByTag(tag.name, userId, PageRequest.of(0, 3)).content
+        // 최소 3개의 코스를 찾을 때까지 반복
+        while (coursesByTags.size < 3 && startIndex < interestTags.size) {
+            val tag = interestTags[startIndex]
+            val tagEntity = tagRepository.findByName(tag.name)
+                ?: throw EntityNotFoundException("태그를 찾을 수 없습니다: ${tag.name}")
+
+            val courseIds = courseRepository.findCourseIdsByTagIdExcludingUser(
+                tagEntity.id, CourseStatus.PUBLIC, userId, PageRequest.of(0, 3)
+            ).content
+
+            if (courseIds.isNotEmpty()) {
+                val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
+                val bookmarkedCourseIds = bookmarkRepository.findBookmarkedCourseIdsByUserIdAndCourseIds(userId, courseIds)
+
+                coursesByTags.addAll(
+                    courses.map { course ->
+                        val geoJsonPosition = geoJsonWriter.write(course.position)
+                        val geoJsonCoordinate = geoJsonWriter.write(course.coordinate)
+
+                        ResponseCourseDTO(
+                            id = course.id,
+                            title = course.title,
+                            maker = course.maker,
+                            bookmark = course.id in bookmarkedCourseIds,
+                            hits = course.hits,
+                            distance = course.distance,
+                            position = removeCrsFieldAsJsonNode(geoJsonPosition),
+                            coordinate = removeCrsFieldAsJsonNode(geoJsonCoordinate),
+                            mapUrl = course.mapUrl,
+                            createdAt = course.createdAt,
+                            updatedAt = course.updatedAt,
+                            author = course.maker.id == userId,
+                            status = course.status,
+                            tag = course.courseTags.map { it.tag },
+                            sido = course.sido,
+                            sigungu = course.sigungu,
+                            commentCount = getCommentCount(course.id),
+                            usageCount = course.usageCount
+                        )
+                    }
+                )
+            }
+            startIndex++
         }
 
-        if (coursesByTags.isEmpty()) return null
+        if (coursesByTags.size < 3) return null
 
-        // 코스 리스트를 섞음
         val uniqueCourse = coursesByTags.shuffled().distinctBy { it.id }
 
-        // 섞인 코스를 CourseSummary로 매핑
         val courseSummaries = uniqueCourse.map { course ->
             CourseSummary(
                 id = course.id,
@@ -809,7 +846,6 @@ class CourseApiServiceImpl(
             )
         }
 
-        // ResponseRecommendCourseDTO 생성
         return ResponseRecommendCourseDTO(
             title = "🎯 이런 코스들은 어때요?",
             item = courseSummaries
@@ -1020,7 +1056,7 @@ class CourseApiServiceImpl(
                 tags = tags.map { it.name },
                 usageCount = course.usageCount
             )
-        }
+        }.shuffled()
 
         // 제목 설정
         val title = when {

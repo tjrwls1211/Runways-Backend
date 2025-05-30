@@ -53,5 +53,9 @@ class TagApiServiceImpl(
             }
     }
 
-
+    // 태그 로그 초기화
+    override fun resetTagLogsByUserId(userId: String) {
+        // 사용자 ID로 태그 로그 삭제
+        tagLogRepository.deleteByUserId(userId)
+    }
 }
