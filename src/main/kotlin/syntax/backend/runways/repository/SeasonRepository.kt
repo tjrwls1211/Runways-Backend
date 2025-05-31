@@ -5,5 +5,9 @@ import syntax.backend.runways.entity.Season
 import java.time.LocalDate
 
 interface SeasonRepository : JpaRepository<Season, Long> {
-    fun findByStartDateBeforeAndEndDateAfter(now1: LocalDate, now2: LocalDate): Season?
+    fun findByStartDateLessThanEqualAndEndDateGreaterThanEqualAndIsActive(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        isActive: Boolean = true
+    ): Season?
 }

@@ -47,6 +47,10 @@ class ExperienceServiceImpl(
     }
 
     private fun findCurrentSeason(now: LocalDate = LocalDate.now()): Season? {
-        return seasonRepository.findByStartDateBeforeAndEndDateAfter(now, now)
+        return seasonRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqualAndIsActive(
+            startDate = now,
+            endDate = now,
+            isActive = true
+        )
     }
 }

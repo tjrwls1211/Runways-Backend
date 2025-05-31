@@ -20,7 +20,7 @@ class UserRankingApiServiceImpl(
     // 시즌 랭킹 조회
     @Transactional
     override fun getSeasonRanking(pageable: Pageable): Page<UserRankingDTO> {
-        val currentSeason = findCurrentSeason() ?: throw EntityNotFoundException("현재 시즌이 존재하지 않습니다.")
+       val currentSeason = findCurrentSeason() ?: throw EntityNotFoundException("현재 시즌이 존재하지 않습니다.")
 
         val rankingPage = userRankingRepository.findBySeasonOrderByScoreDesc(currentSeason, pageable)
 
@@ -36,6 +36,10 @@ class UserRankingApiServiceImpl(
     }
 
     private fun findCurrentSeason(now: LocalDate = LocalDate.now()): Season? {
-        return seasonRepository.findByStartDateBeforeAndEndDateAfter(now, now)
+        return seasonRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqualAndIsActive(
+            startDate = now,
+            endDate = now,
+            isActive = true
+        )
     }
 }
