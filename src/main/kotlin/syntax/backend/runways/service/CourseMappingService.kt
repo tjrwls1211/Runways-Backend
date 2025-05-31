@@ -20,22 +20,11 @@ class CourseMappingService(
         val sql = """
             SELECT gid
             FROM walkroads
-            WHERE ST_Intersects(
-                      ST_Transform(coordinate, 3857),
-                      ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 5)
-                  )
-              AND ST_Length(
-                      ST_Intersection(
-                          ST_Transform(coordinate, 3857),
-                          ST_Buffer(ST_Transform(ST_SetSRID(:line, 4326), 3857), 5)
-                      )
-                  ) / ST_Length(ST_Transform(coordinate, 3857)) >= 0.5
-            ORDER BY ST_Distance(
-                ST_Transform(coordinate, 3857),
-                ST_Transform(ST_SetSRID(:line, 4326), 3857)
-            )
+            WHERE ST_DWithin(coordinate, ST_SetSRID(:line, 4326), 5)
+            ORDER BY ST_Distance(coordinate, ST_SetSRID(:line, 4326))
             LIMIT 100
         """.trimIndent()
+
 
         val gIDs: List<Int> = entityManager.createNativeQuery(sql)
             .setParameter("line", course.coordinate)

@@ -63,6 +63,9 @@ data class Course(
     @Enumerated(EnumType.STRING)
     var difficulty: CourseDifficulty? = null,
 
+    @Column(name = "abs_slope", nullable = true)
+    var absSlope: Float? = null,
+
     @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true,)
     @JsonManagedReference
     var courseTags: MutableList<CourseTag> = mutableListOf()

@@ -38,6 +38,7 @@ class DifficultyAnalyzerService(
             val course = courseRepository.findById(courseId).orElseThrow()
             val difficulty = determineDifficulty(absSlope, course)
             course.difficulty = difficulty
+            course.absSlope = absSlope.toFloat()
             courseRepository.save(course)
         }
 
@@ -69,7 +70,7 @@ class DifficultyAnalyzerService(
             course.distance > 1.0 -> {
                 when {
                     absSlope >= 7 -> CourseDifficulty.HARD
-                    absSlope >= 5 -> CourseDifficulty.NORMAL
+                    absSlope >= 4 -> CourseDifficulty.NORMAL
                     else -> CourseDifficulty.EASY
                 }
             }
