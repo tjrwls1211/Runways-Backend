@@ -42,12 +42,18 @@ class WeatherServiceImpl(
         // 캐시 만료 시간 설정
         val now = LocalDateTime.now()
         val nextHour = now.plusHours(1).withMinute(10).withSecond(0).withNano(0)
-        val duration = java.time.Duration.between(now, nextHour).seconds
+        val duration = java.time.Duration.between(now, nextHour).seconds  // 초 단위로 계산
 
         val weatherData = getNowWeather(nx, ny)
-        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(weatherData), duration, TimeUnit.HOURS)
+        redisTemplate.opsForValue().set(
+            cacheKey,
+            objectMapper.writeValueAsString(weatherData),
+            duration,
+            TimeUnit.SECONDS // 시간 단위를 초로 설정
+        )
         return weatherData
     }
+
 
     override fun getNowWeather(nx: Double, ny: Double): WeatherDataDTO {
         // WGS84 좌표를 격자 좌표로 변환
