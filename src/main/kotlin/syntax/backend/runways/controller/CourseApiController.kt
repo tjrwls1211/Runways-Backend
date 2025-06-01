@@ -157,9 +157,9 @@ class CourseApiController(
 
     // 추천 코스 조회
     @GetMapping("/recommend")
-    fun getRecommendedCourses(@RequestParam nx : Double, ny: Double): ResponseEntity<List<ResponseRecommendCourseDTO>> {
+    fun getRecommendedCourses(@RequestParam nx : Double, ny: Double, city: String): ResponseEntity<List<ResponseRecommendCourseDTO>> {
         val userId = SecurityUtil.getCurrentUserId()
-        val recommendedCourses = courseApiService.getCombinedRecommendCourses(nx, ny, userId)
+        val recommendedCourses = courseApiService.getCombinedRecommendCourses(nx, ny, city, userId)
         return ResponseEntity.ok(recommendedCourses)
     }
 

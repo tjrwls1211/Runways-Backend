@@ -909,8 +909,8 @@ class CourseApiServiceImpl(
     }
 
     // 추천 코스 리스트
-    override fun getCombinedRecommendCourses(nx: Double, ny:Double ,userId: String): List<ResponseRecommendCourseDTO> {
-        val nearCourseByDifficulty = getNearbyCoursesByDifficulty(nx, ny,userId)
+    override fun getCombinedRecommendCourses(nx: Double, ny:Double, city: String, userId: String): List<ResponseRecommendCourseDTO> {
+        val nearCourseByDifficulty = getNearbyCoursesByDifficulty(nx, ny, city, userId)
         val recentCourse = getRecentCourses(userId)
         val popularCourse = getPopularCourses()
         val risingCourse = getRisingCourse()
@@ -1002,35 +1002,69 @@ class CourseApiServiceImpl(
     private fun getNearbyCoursesByDifficulty(
         nx: Double,
         ny: Double,
+        city: String,
         userId: String,
     ): ResponseRecommendCourseDTO? {
-        // 조회 반경 설정 (기본값: 2000m)
+
+        val weather = weatherService.getWeatherByCity(city, nx, ny)
         val radius = 2000.0
 
-        // 사용자의 오늘 상태 조회
+        println("날씨 정보: ${weather.temperature}, ${weather.humidity}, ${weather.sky}")
         val attendance = attendanceApiService.getAttendance(userId)
             ?: return null
 
-        // `courseDifficultyPreference`를 우선적으로 확인
-        val difficulties = when (attendance.courseDifficultyPreference?.toIntOrNull()) {
+        // 날씨 점수 계산
+        val temperature = weather.temperature.toDoubleOrNull() ?: 20.0
+        val humidity = weather.humidity.replace("%", "").toIntOrNull() ?: 50
+        val sky = weather.sky
+
+        val tempScore = when {
+            temperature >= 30.0 -> -2
+            temperature in 25.0..29.9 -> -1
+            temperature in 10.0..24.9 -> 0
+            temperature < 10.0 -> -1
+            else -> 0
+        }
+
+        val humidityScore = when {
+            humidity >= 80 -> -1
+            humidity in 60..79 -> 0
+            else -> 1
+        }
+
+        val skyScore = when (sky) {
+            "맑음" -> 1
+            "구름 많음", "흐림" -> 0
+            "비", "소나기", "눈" -> -1
+            else -> 0
+        }
+
+        val weatherScore = tempScore + humidityScore + skyScore
+
+        // 난이도 결정
+        val preference = attendance.courseDifficultyPreference?.toIntOrNull()
+
+        val difficulties = when (preference) {
             1 -> listOf(CourseDifficulty.EASY)
-            2 -> listOf(CourseDifficulty.NORMAL, CourseDifficulty.EASY)
+            2 -> listOf(CourseDifficulty.NORMAL)
             3 -> listOf(CourseDifficulty.HARD)
-            0, null -> { // 상관없음 또는 값이 없을 경우
-                val totalScore = (attendance.bodyState?.toIntOrNull() ?: 0) +
+            0, null -> {
+                val conditionScore = (attendance.bodyState?.toIntOrNull() ?: 0) +
                         (attendance.feeling?.toIntOrNull() ?: 0)
+                val totalScore = conditionScore + weatherScore
 
                 when {
-                    totalScore <= 2 -> listOf(CourseDifficulty.EASY)
-                    totalScore in 3..4 -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)
+                    totalScore <= 1 -> listOf(CourseDifficulty.EASY)
+                    totalScore in 2..4 -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)
                     totalScore in 5..6 -> listOf(CourseDifficulty.NORMAL, CourseDifficulty.HARD)
                     else -> listOf(CourseDifficulty.HARD)
                 }
             }
-            else -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL) // 기본값
+            else -> listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)
         }
 
-        println("난이도: ${difficulties.joinToString { it.name }}")
+        println("난이도 : ${difficulties.joinToString { it.name }}")
+
         val courseIds = courseRepository.findNearbyCourseIdsByDifficulty(
             lon = nx,
             lat = ny,
@@ -1038,9 +1072,7 @@ class CourseApiServiceImpl(
             radius = radius
         )
 
-        if (courseIds.isEmpty()) {
-            return null
-        }
+        if (courseIds.isEmpty()) return null
 
         val courses = courseRepository.findCoursesWithTagsByIds(courseIds)
 
@@ -1058,19 +1090,36 @@ class CourseApiServiceImpl(
             )
         }.shuffled()
 
-        // 제목 설정
+        // 날씨 + 난이도 기반 추천 제목 설정
         val title = when {
+            sky.contains("비", ignoreCase = true) || sky.contains("소나기", ignoreCase = true) ->
+                "☔ 비 오는 날엔 가볍게 걷는 코스 어때요?"
+
+            temperature >= 30.0 ->
+                "🥵 무더운 날엔 짧고 쉬운 코스로 안전하게!"
+
+            temperature < 10.0 ->
+                "❄️ 추운 날씨엔 몸이 덜 무리가는 코스를 추천해요"
+
+            humidity >= 85 ->
+                "💧 습한 날씨엔 숨쉬기 편한 코스가 좋아요"
+
             difficulties.containsAll(listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)) ->
                 "🌤️ 오늘은 조금 가볍게 뛰어볼까요?"
+
             difficulties.containsAll(listOf(CourseDifficulty.NORMAL, CourseDifficulty.HARD)) ->
                 "🔥 오늘은 조금 열심히 달려볼까요!!"
+
             difficulties.contains(CourseDifficulty.EASY) ->
                 "😊 오늘 지친 당신을 위한 힐링 코스"
+
             difficulties.contains(CourseDifficulty.NORMAL) ->
                 "🏃‍♂️ 오늘은 기분 좋게 달려볼까요?"
+
             difficulties.contains(CourseDifficulty.HARD) ->
                 "💪 기운 넘치는 당신! 한계에 도전해볼까요?"
-            else -> "📍 추천 코스를 확인해보세요!"
+
+            else -> "📍 지금 날씨에 어울리는 추천 코스를 골라봤어요!"
         }
 
         return ResponseRecommendCourseDTO(
@@ -1078,4 +1127,5 @@ class CourseApiServiceImpl(
             item = courseSummaries
         )
     }
+
 }
