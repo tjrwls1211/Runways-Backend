@@ -50,6 +50,7 @@ class CourseApiServiceImpl(
     private val messagingTemplate: SimpMessagingTemplate,
     private val bookmarkRepository: BookmarkRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val fineDustService: FineDustService
 ) : CourseApiService {
 
     @Value("\${llm-server-url}")
@@ -1013,11 +1014,20 @@ class CourseApiServiceImpl(
         val attendance = attendanceApiService.getAttendance(userId)
             ?: return null
 
-        // 날씨 점수 계산
+        // 미세먼지 데이터 가져오기
+        val fineDustData = fineDustService.getFineDustData(nx, ny)
+        println("미세먼지 정보: PM10=${fineDustData.pm10value}, PM2.5=${fineDustData.pm25value}")
+
+        // 미세먼지 수치
+        val pm10 = fineDustData.pm10value.toIntOrNull() ?: 0
+        val pm25 = fineDustData.pm25value.toIntOrNull() ?: 0
+
+        // 날씨 수치
         val temperature = weather.temperature.toDoubleOrNull() ?: 20.0
         val humidity = weather.humidity.replace("%", "").toIntOrNull() ?: 50
         val sky = weather.sky
 
+        // 온도 점수 계산
         val tempScore = when {
             temperature >= 30.0 -> -2
             temperature in 25.0..29.9 -> -1
@@ -1026,12 +1036,14 @@ class CourseApiServiceImpl(
             else -> 0
         }
 
+        // 습도 점수 계산
         val humidityScore = when {
             humidity >= 80 -> -1
             humidity in 60..79 -> 0
             else -> 1
         }
 
+        // 하늘 상태 점수 계산
         val skyScore = when (sky) {
             "맑음" -> 1
             "구름 많음", "흐림" -> 0
@@ -1039,7 +1051,15 @@ class CourseApiServiceImpl(
             else -> 0
         }
 
-        val weatherScore = tempScore + humidityScore + skyScore
+        // 미세먼지 점수 계산
+        val fineDustScore = when {
+            pm10 > 150 || pm25 > 75 -> -2 // 매우 나쁨
+            pm10 in 81..150 || pm25 in 36..75 -> -1 // 나쁨
+            pm10 in 31..80 || pm25 in 16..35 -> 0 // 보통
+            else -> 1 // 좋음
+        }
+
+        val weatherScore = tempScore + humidityScore + skyScore + fineDustScore
 
         // 난이도 결정
         val preference = attendance.courseDifficultyPreference?.toIntOrNull()
@@ -1103,6 +1123,9 @@ class CourseApiServiceImpl(
 
             humidity >= 85 ->
                 "💧 습한 날씨엔 숨쉬기 편한 코스가 좋아요"
+
+            pm10 in 81..150 || pm25 in 36..75 ->
+                "🌫️ 미세먼지가 나쁜 날엔 짧은 코스를 추천해요."
 
             difficulties.containsAll(listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)) ->
                 "🌤️ 오늘은 조금 가볍게 뛰어볼까요?"
