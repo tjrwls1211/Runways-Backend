@@ -1125,7 +1125,7 @@ class CourseApiServiceImpl(
                 "💧 습한 날씨엔 숨쉬기 편한 코스가 좋아요"
 
             pm10 in 81..150 || pm25 in 36..75 ->
-                "🌫️ 미세먼지가 나쁜 날엔 짧은 코스를 추천해요."
+                "🌫️ 미세먼지가 나쁜 날엔 쉬운 코스를 추천해요."
 
             difficulties.containsAll(listOf(CourseDifficulty.EASY, CourseDifficulty.NORMAL)) ->
                 "🌤️ 오늘은 조금 가볍게 뛰어볼까요?"
