@@ -1,6 +1,5 @@
 package syntax.backend.runways.controller
 
-import com.google.api.client.util.SecurityUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.RecommendTagDTO

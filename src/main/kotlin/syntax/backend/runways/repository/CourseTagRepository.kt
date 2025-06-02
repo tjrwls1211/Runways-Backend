@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import syntax.backend.runways.entity.CourseTag
 import java.util.UUID
 
+@Repository
 interface CourseTagRepository : JpaRepository<CourseTag, UUID> {
     @Modifying
     @Transactional

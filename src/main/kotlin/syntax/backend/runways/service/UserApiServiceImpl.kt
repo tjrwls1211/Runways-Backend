@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import syntax.backend.runways.dto.*
-import syntax.backend.runways.entity.Follow
 import syntax.backend.runways.entity.Role
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.UserRepository
@@ -15,7 +14,6 @@ import syntax.backend.runways.util.JwtUtil
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
-import kotlin.text.get
 
 @Service
 class UserApiServiceImpl(

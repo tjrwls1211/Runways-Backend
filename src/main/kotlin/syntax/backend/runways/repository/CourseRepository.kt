@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import syntax.backend.runways.entity.Course
 import syntax.backend.runways.entity.CourseStatus
 import java.util.*
 
+@Repository
 interface CourseRepository : JpaRepository<Course, UUID> {
     @Query("""
         SELECT DISTINCT c FROM Course c 

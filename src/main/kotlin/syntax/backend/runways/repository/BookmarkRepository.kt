@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import syntax.backend.runways.dto.CourseBookmarkCount
 import syntax.backend.runways.entity.Bookmark
 import java.util.UUID
 
+@Repository
 interface BookmarkRepository : JpaRepository<Bookmark, Long> {
     fun existsByCourseIdAndUserId(courseId : UUID, userId : String) : Boolean
     fun deleteByCourseId(courseId: UUID)

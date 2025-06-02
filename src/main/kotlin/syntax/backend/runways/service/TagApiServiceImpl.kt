@@ -5,7 +5,6 @@ import syntax.backend.runways.dto.RecommendTagDTO
 import syntax.backend.runways.entity.Tag
 import syntax.backend.runways.repository.TagLogRepository
 import syntax.backend.runways.repository.TagRepository
-import syntax.backend.runways.service.UserApiService
 
 @Service
 class TagApiServiceImpl(

@@ -5,11 +5,13 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import syntax.backend.runways.dto.CourseCommentCount
 import syntax.backend.runways.entity.Comment
 import syntax.backend.runways.entity.CommentStatus
 import java.util.*
 
+@Repository
 interface CommentRepository : JpaRepository<Comment, UUID> {
     fun findByPost_IdAndStatusOrderByCreatedAtAsc(postId: UUID, status: CommentStatus, pageable: Pageable): Page<Comment>
     fun countByPost_IdAndStatus(postId: UUID, status: CommentStatus): Int

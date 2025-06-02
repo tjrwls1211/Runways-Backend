@@ -5,7 +5,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import syntax.backend.runways.dto.*
 import syntax.backend.runways.service.CourseApiService
-import syntax.backend.runways.service.UserApiService
 import syntax.backend.runways.util.SecurityUtil
 import java.util.UUID
 

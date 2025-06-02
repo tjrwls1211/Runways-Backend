@@ -8,12 +8,10 @@ import syntax.backend.runways.dto.NotificationDTO
 import syntax.backend.runways.entity.Notification
 import syntax.backend.runways.entity.User
 import syntax.backend.runways.repository.NotificationRepository
-import syntax.backend.runways.util.JwtUtil
 import java.util.*
 
 @Service
 class NotificationApiServiceImpl(
-    private val jwtUtil: JwtUtil,
     private val notificationRepository: NotificationRepository
 ) : NotificationApiService {
 

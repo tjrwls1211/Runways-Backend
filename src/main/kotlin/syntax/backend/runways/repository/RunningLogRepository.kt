@@ -5,12 +5,14 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
 import syntax.backend.runways.entity.CourseStatus
 import syntax.backend.runways.entity.RunningLog
 import syntax.backend.runways.entity.RunningLogStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
+@Repository
 interface RunningLogRepository : JpaRepository<RunningLog, UUID> {
     fun findByUserIdAndStatusAndEndTimeBetweenOrderByEndTimeDesc(
         userId: String,
